@@ -1,7 +1,7 @@
 plugins {
     // Plugin de la aplicación Android.
     alias(libs.plugins.android.application)
-
+    alias(libs.plugins.kotlin.android)
     // Soporte para Jetpack Compose.
     alias(libs.plugins.kotlin.compose)
 
@@ -32,10 +32,13 @@ android {
             }
         }
     }
+
+    // 1. Compatibilidad nativa de Java cambiada a 17
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
+
     buildFeatures {
         compose = true
     }
@@ -72,4 +75,9 @@ dependencies {
 
 // Pruebas unitarias.
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
+}
+
+// Configura la ubicación de los esquemas de Room para futuras migraciones.
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
