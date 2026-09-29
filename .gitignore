@@ -1,0 +1,49 @@
+# Built application files
+*.apk
+*.ap_
+*.aab
+
+# Files for the ART/Dalvik VM
+*.dex
+
+# Java class files
+*.class
+
+# Generated files
+bin/
+gen/
+out/
+/build/
+
+# Gradle files
+.gradle/
+build/
+
+# Local configuration file (sdk path, etc.)
+local.properties
+
+# JetBrains IDE specific files
+.idea/
+.user.iml
+*.iml
+*.ipr
+*.iws
+.navdata
+
+# OS specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Captures from the Android Studio Profiler
+captures/
+
+# Lint cache
+lint/
+
+# Local cache for project
+.unity/
