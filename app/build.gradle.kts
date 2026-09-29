@@ -1,6 +1,12 @@
 plugins {
+    // Plugin de la aplicación Android.
     alias(libs.plugins.android.application)
+
+    // Soporte para Jetpack Compose.
     alias(libs.plugins.kotlin.compose)
+
+    // Procesador de código para generar la implementación de Room.
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -51,4 +57,19 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
+
+    // Base de datos local SQLite mediante Room.
+    val roomVersion = "2.7.2"
+
+    implementation("androidx.room:room-runtime:$roomVersion")
+    implementation("androidx.room:room-ktx:$roomVersion")
+
+// KSP genera el código requerido por Room.
+    ksp("androidx.room:room-compiler:$roomVersion")
+
+// Corrutinas para operaciones asíncronas.
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+
+// Pruebas unitarias.
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
 }
