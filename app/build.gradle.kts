@@ -75,6 +75,12 @@ dependencies {
 
     // Pruebas unitarias.
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
+
+    // ViewModel integrado con Jetpack Compose.
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.11.0")
+
+    // Permite que Compose observe StateFlow desde el ciclo de vida.
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.11.0")
 }
 
     // Configura la ubicación de los esquemas de Room para futuras migraciones.
