@@ -67,17 +67,17 @@ dependencies {
     implementation("androidx.room:room-runtime:$roomVersion")
     implementation("androidx.room:room-ktx:$roomVersion")
 
-// KSP genera el código requerido por Room.
+    // KSP genera el código requerido por Room.
     ksp("androidx.room:room-compiler:$roomVersion")
 
-// Corrutinas para operaciones asíncronas.
+    // Corrutinas para operaciones asíncronas.
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
 
-// Pruebas unitarias.
+    // Pruebas unitarias.
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
 }
 
-// Configura la ubicación de los esquemas de Room para futuras migraciones.
+    // Configura la ubicación de los esquemas de Room para futuras migraciones.
 ksp {
     arg("room.schemaLocation", "$projectDir/schemas")
 }
