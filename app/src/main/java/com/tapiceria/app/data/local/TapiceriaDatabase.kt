@@ -11,6 +11,10 @@ import com.tapiceria.app.data.local.entity.PagoEntity
 import com.tapiceria.app.data.local.entity.ServicioEntity
 import com.tapiceria.app.data.local.entity.TrabajoEntity
 
+// Agrega estos imports:
+import com.tapiceria.app.data.local.dao.AtencionDao
+import com.tapiceria.app.data.local.dao.CotizacionDao
+
 /**
  * Punto de acceso a la base de datos local.
  *
@@ -37,4 +41,10 @@ abstract class TapiceriaDatabase : RoomDatabase() {
      * Agregaremos los demás DAO conforme implementemos sus módulos.
      */
     abstract fun clienteDao(): ClienteDao
+
+    /** DAO para registrar y consultar atenciones. */
+    abstract fun atencionDao(): AtencionDao
+
+    /** DAO para administrar cotizaciones. */
+    abstract fun cotizacionDao(): CotizacionDao
 }

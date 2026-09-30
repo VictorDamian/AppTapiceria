@@ -3,18 +3,20 @@ package com.tapiceria.app.di
 import android.content.Context
 import androidx.room.Room
 import com.tapiceria.app.data.local.TapiceriaDatabase
+import com.tapiceria.app.data.repository.AtencionRepositoryImpl
 import com.tapiceria.app.data.repository.ClienteRepositoryImpl
+import com.tapiceria.app.data.repository.CotizacionRepositoryImpl
+import com.tapiceria.app.domain.repository.AtencionRepository
 import com.tapiceria.app.domain.repository.ClienteRepository
+import com.tapiceria.app.domain.repository.CotizacionRepository
 
 /**
- * Contenedor de dependencias de la aplicación.
- *
- * Mantiene una única instancia de la base de datos y del
- * repositorio durante la ejecución del proceso de la app.
+ * Contenedor central de dependencias.
+ * Se comparte durante la ejecución del proceso de la aplicación.
  */
 class AppContainer(context: Context) {
 
-    // Conserva el contexto de aplicación para evitar fugas de memoria.
+    // Una única instancia de Room para toda la aplicación.
     private val database: TapiceriaDatabase =
         Room.databaseBuilder(
             context.applicationContext,
@@ -22,7 +24,13 @@ class AppContainer(context: Context) {
             "tapiceria_database"
         ).build()
 
-    /** Repositorio que utilizarán las pantallas y ViewModels. */
+    // Repositorios que consumirán los ViewModels.
     val clienteRepository: ClienteRepository =
         ClienteRepositoryImpl(database.clienteDao())
+
+    val atencionRepository: AtencionRepository =
+        AtencionRepositoryImpl(database.atencionDao())
+
+    val cotizacionRepository: CotizacionRepository =
+        CotizacionRepositoryImpl(database.cotizacionDao())
 }
