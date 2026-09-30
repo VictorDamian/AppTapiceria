@@ -1,52 +1,49 @@
+
 package com.tapiceria.app
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-
 import androidx.compose.runtime.*
-
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-
 import androidx.lifecycle.viewmodel.compose.viewModel
-
 import com.tapiceria.app.di.AppContainer
-
 import com.tapiceria.app.ui.atenciones.AtencionScreen
 import com.tapiceria.app.ui.atenciones.AtencionViewModel
 import com.tapiceria.app.ui.atenciones.AtencionViewModelFactory
-
 import com.tapiceria.app.ui.clientes.ClienteScreen
 import com.tapiceria.app.ui.clientes.ClienteViewModel
 import com.tapiceria.app.ui.clientes.ClienteViewModelFactory
+import com.tapiceria.app.ui.cotizaciones.CotizacionScreen
+import com.tapiceria.app.ui.cotizaciones.CotizacionViewModel
+import com.tapiceria.app.ui.cotizaciones.CotizacionViewModelFactory
 
+/**
+ * Actividad principal con navegación entre los módulos implementados.
+ */
 class MainActivity : ComponentActivity() {
+
     private lateinit var container: AppContainer
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        //enableEdgeToEdge()
-        // Inicializa el contenedor de repositorios de la aplicación.
+
+        // Reutiliza el contenedor de dependencias de la aplicación.
         container = (application as TapiceriaApplication).container
 
         setContent {
             MaterialTheme {
-                // Cada ViewModel se crea una sola vez para esta pantalla.
                 val clienteViewModel: ClienteViewModel = viewModel(
                     factory = ClienteViewModelFactory(
                         container.clienteRepository
@@ -60,71 +57,94 @@ class MainActivity : ComponentActivity() {
                     )
                 )
 
+                val cotizacionViewModel: CotizacionViewModel = viewModel(
+                    factory = CotizacionViewModelFactory(
+                        container.cotizacionRepository,
+                        container.atencionRepository
+                    )
+                )
+
                 var pantallaActual by remember {
                     mutableStateOf("CLIENTES")
                 }
 
-                Column(
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    // Navegación temporal; posteriormente la integraremos
-                    // en una barra de navegación más completa.
+                Column(modifier = Modifier.fillMaxSize()) {
+
+                    // Barra de navegación provisional.
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        if (pantallaActual == "CLIENTES") {
-                            Button(
-                                onClick = { pantallaActual = "CLIENTES" },
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text("Clientes")
-                            }
-                        } else {
-                            OutlinedButton(
-                                onClick = { pantallaActual = "CLIENTES" },
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text("Clientes")
-                            }
+                        BotonNavegacion(
+                            texto = "Clientes",
+                            seleccionado = pantallaActual == "CLIENTES",
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            pantallaActual = "CLIENTES"
                         }
 
-                        if (pantallaActual == "ATENCIONES") {
-                            Button(
-                                onClick = { pantallaActual = "ATENCIONES" },
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text("Atenciones")
-                            }
-                        } else {
-                            OutlinedButton(
-                                onClick = { pantallaActual = "ATENCIONES" },
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text("Atenciones")
-                            }
+                        BotonNavegacion(
+                            texto = "Atenciones",
+                            seleccionado = pantallaActual == "ATENCIONES",
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            pantallaActual = "ATENCIONES"
+                        }
+
+                        BotonNavegacion(
+                            texto = "Cotizaciones",
+                            seleccionado = pantallaActual == "COTIZACIONES",
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            pantallaActual = "COTIZACIONES"
                         }
                     }
 
-                    Box(
+                    // Muestra únicamente el módulo seleccionado.
+                    androidx.compose.foundation.layout.Box(
                         modifier = Modifier
                             .fillMaxSize()
                             .weight(1f)
                     ) {
                         when (pantallaActual) {
-                            "CLIENTES" -> ClienteScreen(
-                                viewModel = clienteViewModel
-                            )
+                            "CLIENTES" -> ClienteScreen(clienteViewModel)
 
-                            "ATENCIONES" -> AtencionScreen(
-                                viewModel = atencionViewModel
-                            )
+                            "ATENCIONES" -> AtencionScreen(atencionViewModel)
+
+                            "COTIZACIONES" -> CotizacionScreen(cotizacionViewModel)
                         }
                     }
                 }
             }
+        }
+    }
+}
+
+/**
+ * Botón reutilizable para evitar repetir el diseño de navegación.
+ */
+@Composable
+private fun BotonNavegacion(
+    texto: String,
+    seleccionado: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    if (seleccionado) {
+        Button(
+            onClick = onClick,
+            modifier = modifier
+        ) {
+            Text(texto)
+        }
+    } else {
+        OutlinedButton(
+            onClick = onClick,
+            modifier = modifier
+        ) {
+            Text(texto)
         }
     }
 }
