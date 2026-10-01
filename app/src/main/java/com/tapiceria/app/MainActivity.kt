@@ -31,6 +31,7 @@ import com.tapiceria.app.ui.cotizaciones.CotizacionViewModelFactory
 import com.tapiceria.app.ui.dashboard.DashboardScreen
 import com.tapiceria.app.ui.dashboard.DashboardViewModel
 import com.tapiceria.app.ui.dashboard.DashboardViewModelFactory
+import com.tapiceria.app.ui.exportacion.ExportacionScreen
 import com.tapiceria.app.ui.fotografias.FotoTrabajoScreen
 import com.tapiceria.app.ui.fotografias.FotoTrabajoViewModel
 import com.tapiceria.app.ui.fotografias.FotoTrabajoViewModelFactory
@@ -173,6 +174,12 @@ class MainActivity : ComponentActivity() {
                             seleccionado = pantallaActual == "INICIO",
                             onClick = { pantallaActual = "INICIO" }
                         )
+
+                        BotonNavegacion(
+                            texto = "Exportar",
+                            seleccionado = pantallaActual == "EXPORTAR",
+                            onClick = { pantallaActual = "EXPORTAR" }
+                        )
                     }
 
                     // Muestra únicamente el módulo seleccionado.
@@ -195,6 +202,8 @@ class MainActivity : ComponentActivity() {
                             "PAGOS" -> PagoScreen(pagoViewModel)
 
                             "INICIO" -> DashboardScreen(dashboardViewModel)
+
+                            "EXPORTAR" -> ExportacionScreen()
                         }
                     }
                 }
