@@ -14,6 +14,7 @@ import com.tapiceria.app.data.local.entity.TrabajoEntity
 // Agrega estos imports:
 import com.tapiceria.app.data.local.dao.AtencionDao
 import com.tapiceria.app.data.local.dao.CotizacionDao
+import com.tapiceria.app.data.local.dao.DashboardDao
 import com.tapiceria.app.data.local.dao.FotoTrabajoDao
 import com.tapiceria.app.data.local.dao.PagoDao
 
@@ -62,4 +63,9 @@ abstract class TapiceriaDatabase : RoomDatabase() {
      * Proporciona acceso a las operaciones de pagos.
      */
     abstract fun pagoDao(): PagoDao
+
+    /**
+     * Proporciona acceso a las consultas del Dashboard.
+     */
+    abstract fun dashboardDao(): DashboardDao
 }

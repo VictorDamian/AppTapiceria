@@ -6,6 +6,7 @@ import com.tapiceria.app.data.local.TapiceriaDatabase
 import com.tapiceria.app.data.repository.AtencionRepositoryImpl
 import com.tapiceria.app.data.repository.ClienteRepositoryImpl
 import com.tapiceria.app.data.repository.CotizacionRepositoryImpl
+import com.tapiceria.app.data.repository.DashboardRepositoryImpl
 import com.tapiceria.app.data.repository.FotoTrabajoRepositoryImpl
 import com.tapiceria.app.data.repository.PagoRepositoryImpl
 import com.tapiceria.app.domain.repository.AtencionRepository
@@ -13,6 +14,7 @@ import com.tapiceria.app.domain.repository.ClienteRepository
 import com.tapiceria.app.domain.repository.CotizacionRepository
 
 import com.tapiceria.app.data.repository.TrabajoRepositoryImpl
+import com.tapiceria.app.domain.repository.DashboardRepository
 import com.tapiceria.app.domain.repository.FotoTrabajoRepository
 import com.tapiceria.app.domain.repository.PagoRepository
 import com.tapiceria.app.domain.repository.TrabajoRepository
@@ -53,4 +55,10 @@ class AppContainer(context: Context) {
      */
     val pagoRepository: PagoRepository =
         PagoRepositoryImpl(database.pagoDao())
+
+    /**
+     * Repositorio encargado de los indicadores y listados del Dashboard.
+     */
+    val dashboardRepository: DashboardRepository =
+        DashboardRepositoryImpl(database.dashboardDao())
 }

@@ -28,6 +28,9 @@ import com.tapiceria.app.ui.clientes.ClienteViewModelFactory
 import com.tapiceria.app.ui.cotizaciones.CotizacionScreen
 import com.tapiceria.app.ui.cotizaciones.CotizacionViewModel
 import com.tapiceria.app.ui.cotizaciones.CotizacionViewModelFactory
+import com.tapiceria.app.ui.dashboard.DashboardScreen
+import com.tapiceria.app.ui.dashboard.DashboardViewModel
+import com.tapiceria.app.ui.dashboard.DashboardViewModelFactory
 import com.tapiceria.app.ui.fotografias.FotoTrabajoScreen
 import com.tapiceria.app.ui.fotografias.FotoTrabajoViewModel
 import com.tapiceria.app.ui.fotografias.FotoTrabajoViewModelFactory
@@ -99,8 +102,15 @@ class MainActivity : ComponentActivity() {
                     )
                 )
 
+                // ViewModel del Dashboard, conectado al repositorio de indicadores.
+                val dashboardViewModel: DashboardViewModel = viewModel(
+                    factory = DashboardViewModelFactory(
+                        dashboardRepository = container.dashboardRepository
+                    )
+                )
+
                 var pantallaActual by remember {
-                    mutableStateOf("CLIENTES")
+                    mutableStateOf("INICIO")
                 }
 
                 Column(modifier = Modifier.fillMaxSize()) {
@@ -157,6 +167,12 @@ class MainActivity : ComponentActivity() {
                             seleccionado = pantallaActual == "PAGOS",
                             onClick = { pantallaActual = "PAGOS" }
                         )
+
+                        BotonNavegacion(
+                            texto = "Inicio",
+                            seleccionado = pantallaActual == "INICIO",
+                            onClick = { pantallaActual = "INICIO" }
+                        )
                     }
 
                     // Muestra únicamente el módulo seleccionado.
@@ -177,6 +193,8 @@ class MainActivity : ComponentActivity() {
                             "FOTOGRAFIAS" -> FotoTrabajoScreen(fotoTrabajoViewModel)
 
                             "PAGOS" -> PagoScreen(pagoViewModel)
+
+                            "INICIO" -> DashboardScreen(dashboardViewModel)
                         }
                     }
                 }
