@@ -10,6 +10,8 @@ import com.tapiceria.app.domain.repository.AtencionRepository
 import com.tapiceria.app.domain.repository.ClienteRepository
 import com.tapiceria.app.domain.repository.CotizacionRepository
 
+import com.tapiceria.app.data.repository.TrabajoRepositoryImpl
+import com.tapiceria.app.domain.repository.TrabajoRepository
 /**
  * Contenedor central de dependencias.
  * Se comparte durante la ejecución del proceso de la aplicación.
@@ -33,4 +35,8 @@ class AppContainer(context: Context) {
 
     val cotizacionRepository: CotizacionRepository =
         CotizacionRepositoryImpl(database.cotizacionDao())
+
+    // Repositorio para registrar y consultar trabajos.
+    val trabajoRepository: TrabajoRepository =
+        TrabajoRepositoryImpl(database.trabajoDao())
 }

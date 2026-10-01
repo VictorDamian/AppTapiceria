@@ -29,6 +29,10 @@ import com.tapiceria.app.ui.cotizaciones.CotizacionScreen
 import com.tapiceria.app.ui.cotizaciones.CotizacionViewModel
 import com.tapiceria.app.ui.cotizaciones.CotizacionViewModelFactory
 
+import com.tapiceria.app.ui.trabajos.TrabajoScreen
+import com.tapiceria.app.ui.trabajos.TrabajoViewModel
+import com.tapiceria.app.ui.trabajos.TrabajoViewModelFactory
+
 /**
  * Actividad principal con navegación entre los módulos implementados.
  */
@@ -61,6 +65,14 @@ class MainActivity : ComponentActivity() {
                     factory = CotizacionViewModelFactory(
                         container.cotizacionRepository,
                         container.atencionRepository
+                    )
+                )
+
+                // ViewModel para registrar y dar seguimiento a los trabajos.
+                val trabajoViewModel: TrabajoViewModel = viewModel(
+                    factory = TrabajoViewModelFactory(
+                        container.trabajoRepository,
+                        container.clienteRepository
                     )
                 )
 
@@ -100,6 +112,14 @@ class MainActivity : ComponentActivity() {
                         ) {
                             pantallaActual = "COTIZACIONES"
                         }
+
+                        BotonNavegacion(
+                            texto = "Trabajos",
+                            seleccionado = pantallaActual == "TRABAJOS",
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            pantallaActual = "TRABAJOS"
+                        }
                     }
 
                     // Muestra únicamente el módulo seleccionado.
@@ -114,6 +134,8 @@ class MainActivity : ComponentActivity() {
                             "ATENCIONES" -> AtencionScreen(atencionViewModel)
 
                             "COTIZACIONES" -> CotizacionScreen(cotizacionViewModel)
+
+                            "TRABAJOS" -> TrabajoScreen(trabajoViewModel)
                         }
                     }
                 }

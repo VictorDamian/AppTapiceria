@@ -15,6 +15,8 @@ import com.tapiceria.app.data.local.entity.TrabajoEntity
 import com.tapiceria.app.data.local.dao.AtencionDao
 import com.tapiceria.app.data.local.dao.CotizacionDao
 
+import com.tapiceria.app.data.local.dao.TrabajoDao
+
 /**
  * Punto de acceso a la base de datos local.
  *
@@ -47,4 +49,7 @@ abstract class TapiceriaDatabase : RoomDatabase() {
 
     /** DAO para administrar cotizaciones. */
     abstract fun cotizacionDao(): CotizacionDao
+
+    // Expone las operaciones de acceso a trabajos.
+    abstract fun trabajoDao(): TrabajoDao
 }
