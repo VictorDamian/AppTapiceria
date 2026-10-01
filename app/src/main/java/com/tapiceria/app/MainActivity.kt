@@ -31,6 +31,9 @@ import com.tapiceria.app.ui.cotizaciones.CotizacionViewModelFactory
 import com.tapiceria.app.ui.fotografias.FotoTrabajoScreen
 import com.tapiceria.app.ui.fotografias.FotoTrabajoViewModel
 import com.tapiceria.app.ui.fotografias.FotoTrabajoViewModelFactory
+import com.tapiceria.app.ui.pagos.PagoScreen
+import com.tapiceria.app.ui.pagos.PagoViewModel
+import com.tapiceria.app.ui.pagos.PagoViewModelFactory
 
 import com.tapiceria.app.ui.trabajos.TrabajoScreen
 import com.tapiceria.app.ui.trabajos.TrabajoViewModel
@@ -88,6 +91,14 @@ class MainActivity : ComponentActivity() {
                     )
                 )
 
+                // ViewModel del módulo de pagos.
+                val pagoViewModel: PagoViewModel = viewModel(
+                    factory = PagoViewModelFactory(
+                        trabajoRepository = container.trabajoRepository,
+                        pagoRepository = container.pagoRepository
+                    )
+                )
+
                 var pantallaActual by remember {
                     mutableStateOf("CLIENTES")
                 }
@@ -140,6 +151,12 @@ class MainActivity : ComponentActivity() {
                         ) {
                             pantallaActual = "FOTOGRAFIAS"
                         }
+
+                        BotonNavegacion(
+                            texto = "Pagos",
+                            seleccionado = pantallaActual == "PAGOS",
+                            onClick = { pantallaActual = "PAGOS" }
+                        )
                     }
 
                     // Muestra únicamente el módulo seleccionado.
@@ -158,6 +175,8 @@ class MainActivity : ComponentActivity() {
                             "TRABAJOS" -> TrabajoScreen(trabajoViewModel)
 
                             "FOTOGRAFIAS" -> FotoTrabajoScreen(fotoTrabajoViewModel)
+
+                            "PAGOS" -> PagoScreen(pagoViewModel)
                         }
                     }
                 }

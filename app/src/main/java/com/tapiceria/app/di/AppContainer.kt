@@ -7,12 +7,14 @@ import com.tapiceria.app.data.repository.AtencionRepositoryImpl
 import com.tapiceria.app.data.repository.ClienteRepositoryImpl
 import com.tapiceria.app.data.repository.CotizacionRepositoryImpl
 import com.tapiceria.app.data.repository.FotoTrabajoRepositoryImpl
+import com.tapiceria.app.data.repository.PagoRepositoryImpl
 import com.tapiceria.app.domain.repository.AtencionRepository
 import com.tapiceria.app.domain.repository.ClienteRepository
 import com.tapiceria.app.domain.repository.CotizacionRepository
 
 import com.tapiceria.app.data.repository.TrabajoRepositoryImpl
 import com.tapiceria.app.domain.repository.FotoTrabajoRepository
+import com.tapiceria.app.domain.repository.PagoRepository
 import com.tapiceria.app.domain.repository.TrabajoRepository
 /**
  * Contenedor central de dependencias.
@@ -45,4 +47,10 @@ class AppContainer(context: Context) {
     // Repositorio para administrar las fotografías de los trabajos.
     val fotoTrabajoRepository: FotoTrabajoRepository =
         FotoTrabajoRepositoryImpl(database.fotoTrabajoDao())
+
+    /**
+     * Repositorio de pagos asociado a la base de datos local.
+     */
+    val pagoRepository: PagoRepository =
+        PagoRepositoryImpl(database.pagoDao())
 }
