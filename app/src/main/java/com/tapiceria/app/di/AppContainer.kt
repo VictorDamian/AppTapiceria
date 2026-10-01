@@ -8,6 +8,7 @@ import com.tapiceria.app.data.repository.ClienteRepositoryImpl
 import com.tapiceria.app.data.repository.CotizacionRepositoryImpl
 import com.tapiceria.app.data.repository.DashboardRepositoryImpl
 import com.tapiceria.app.data.repository.FotoTrabajoRepositoryImpl
+import com.tapiceria.app.data.repository.HistorialClienteRepositoryImpl
 import com.tapiceria.app.data.repository.PagoRepositoryImpl
 import com.tapiceria.app.domain.repository.AtencionRepository
 import com.tapiceria.app.domain.repository.ClienteRepository
@@ -61,4 +62,10 @@ class AppContainer(context: Context) {
      */
     val dashboardRepository: DashboardRepository =
         DashboardRepositoryImpl(database.dashboardDao())
+
+    // Repositorio de consultas del historial de clientes.
+    val historialClienteRepository =
+        HistorialClienteRepositoryImpl(
+            database.historialClienteDao()
+        )
 }

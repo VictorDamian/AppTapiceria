@@ -33,9 +33,15 @@ import com.tapiceria.app.data.local.entity.ClienteEntity
 
 /**
  * Pantalla principal de gestión de clientes.
+ *
+ * Permite registrar, editar y desactivar clientes, además de consultar
+ * el historial de cada uno.
  */
 @Composable
-fun ClienteScreen(viewModel: ClienteViewModel) {
+fun ClienteScreen(
+    viewModel: ClienteViewModel,
+    onVerHistorial: (Long) -> Unit
+) {
     val estado by viewModel.uiState.collectAsState()
 
     var mostrarFormulario by remember { mutableStateOf(false) }
@@ -150,6 +156,10 @@ fun ClienteScreen(viewModel: ClienteViewModel) {
                                 },
                                 onDesactivar = {
                                     clienteDesactivar = cliente
+                                },
+                                onVerHistorial = {
+                                    // Envía el ID del cliente seleccionado.
+                                    onVerHistorial(cliente.id)
                                 }
                             )
                         }
@@ -188,8 +198,10 @@ fun ClienteScreen(viewModel: ClienteViewModel) {
             onDismissRequest = { clienteDesactivar = null },
             title = { Text("Desactivar cliente") },
             text = {
-                Text("¿Deseas desactivar a ${cliente.nombre}? " +
-                        "Se conservará su historial.")
+                Text(
+                    "¿Deseas desactivar a ${cliente.nombre}? " +
+                            "Se conservará su historial."
+                )
             },
             confirmButton = {
                 TextButton(
@@ -215,7 +227,8 @@ fun ClienteScreen(viewModel: ClienteViewModel) {
 private fun ClienteCard(
     cliente: ClienteEntity,
     onEditar: () -> Unit,
-    onDesactivar: () -> Unit
+    onDesactivar: () -> Unit,
+    onVerHistorial: () -> Unit
 ) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -238,6 +251,10 @@ private fun ClienteCard(
             ) {
                 OutlinedButton(onClick = onEditar) {
                     Text("Editar")
+                }
+
+                OutlinedButton(onClick = onVerHistorial) {
+                    Text("Ver historial")
                 }
 
                 TextButton(onClick = onDesactivar) {

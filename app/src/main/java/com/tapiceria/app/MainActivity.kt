@@ -35,6 +35,9 @@ import com.tapiceria.app.ui.exportacion.ExportacionScreen
 import com.tapiceria.app.ui.fotografias.FotoTrabajoScreen
 import com.tapiceria.app.ui.fotografias.FotoTrabajoViewModel
 import com.tapiceria.app.ui.fotografias.FotoTrabajoViewModelFactory
+import com.tapiceria.app.ui.historial.HistorialClienteScreen
+import com.tapiceria.app.ui.historial.HistorialClienteViewModel
+import com.tapiceria.app.ui.historial.HistorialClienteViewModelFactory
 import com.tapiceria.app.ui.pagos.PagoScreen
 import com.tapiceria.app.ui.pagos.PagoViewModel
 import com.tapiceria.app.ui.pagos.PagoViewModelFactory
@@ -114,6 +117,23 @@ class MainActivity : ComponentActivity() {
                 var pantallaActual by remember {
                     mutableStateOf("INICIO")
                 }
+
+                // Conserva el ID del cliente seleccionado para abrir su historial.
+                var clienteIdHistorial by remember {
+                    mutableStateOf<Long?>(null)
+                }
+
+                // Se utiliza una clave diferente para cada cliente, de modo que
+                // cada historial tenga su propio ViewModel.
+                val idParaHistorial = clienteIdHistorial ?: 0L
+
+                val historialClienteViewModel: HistorialClienteViewModel = viewModel(
+                    key = "historial_cliente_$idParaHistorial",
+                    factory = HistorialClienteViewModelFactory(
+                        clienteId = idParaHistorial,
+                        repository = container.historialClienteRepository
+                    )
+                )
 
                 Column(modifier = Modifier.fillMaxSize()) {
 
@@ -196,7 +216,25 @@ class MainActivity : ComponentActivity() {
                             .weight(1f)
                     ) {
                         when (pantallaActual) {
-                            "CLIENTES" -> ClienteScreen(clienteViewModel)
+
+                            "CLIENTES" -> ClienteScreen(
+                                viewModel = clienteViewModel,
+                                onVerHistorial = { clienteId ->
+                                    // Guarda el cliente seleccionado y abre su historial.
+                                    clienteIdHistorial = clienteId
+                                    pantallaActual = "HISTORIAL"
+                                }
+                            )
+
+                            "HISTORIAL" -> {
+                                HistorialClienteScreen(
+                                    viewModel = historialClienteViewModel,
+                                    onVolver = {
+                                        // Regresa a la lista sin perder los filtros de búsqueda.
+                                        pantallaActual = "CLIENTES"
+                                    }
+                                )
+                            }
 
                             "ATENCIONES" -> AtencionScreen(atencionViewModel)
 

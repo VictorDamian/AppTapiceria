@@ -16,6 +16,7 @@ import com.tapiceria.app.data.local.dao.AtencionDao
 import com.tapiceria.app.data.local.dao.CotizacionDao
 import com.tapiceria.app.data.local.dao.DashboardDao
 import com.tapiceria.app.data.local.dao.FotoTrabajoDao
+import com.tapiceria.app.data.local.dao.HistorialClienteDao
 import com.tapiceria.app.data.local.dao.PagoDao
 
 import com.tapiceria.app.data.local.dao.TrabajoDao
@@ -68,4 +69,7 @@ abstract class TapiceriaDatabase : RoomDatabase() {
      * Proporciona acceso a las consultas del Dashboard.
      */
     abstract fun dashboardDao(): DashboardDao
+
+    // DAO de consultas para el historial del cliente.
+    abstract fun historialClienteDao(): HistorialClienteDao
 }
