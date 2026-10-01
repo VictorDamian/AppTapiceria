@@ -81,6 +81,9 @@ dependencies {
 
     // Permite que Compose observe StateFlow desde el ciclo de vida.
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.11.0")
+
+    // Carga y muestra imágenes en Jetpack Compose.
+    implementation("io.coil-kt:coil-compose:2.7.0")
 }
 
     // Configura la ubicación de los esquemas de Room para futuras migraciones.

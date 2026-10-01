@@ -28,6 +28,9 @@ import com.tapiceria.app.ui.clientes.ClienteViewModelFactory
 import com.tapiceria.app.ui.cotizaciones.CotizacionScreen
 import com.tapiceria.app.ui.cotizaciones.CotizacionViewModel
 import com.tapiceria.app.ui.cotizaciones.CotizacionViewModelFactory
+import com.tapiceria.app.ui.fotografias.FotoTrabajoScreen
+import com.tapiceria.app.ui.fotografias.FotoTrabajoViewModel
+import com.tapiceria.app.ui.fotografias.FotoTrabajoViewModelFactory
 
 import com.tapiceria.app.ui.trabajos.TrabajoScreen
 import com.tapiceria.app.ui.trabajos.TrabajoViewModel
@@ -76,6 +79,15 @@ class MainActivity : ComponentActivity() {
                     )
                 )
 
+                // ViewModel del módulo de fotografías.
+                val fotoTrabajoViewModel: FotoTrabajoViewModel = viewModel(
+                    factory = FotoTrabajoViewModelFactory(
+                        context = applicationContext,
+                        trabajoRepository = container.trabajoRepository,
+                        fotoTrabajoRepository = container.fotoTrabajoRepository
+                    )
+                )
+
                 var pantallaActual by remember {
                     mutableStateOf("CLIENTES")
                 }
@@ -120,6 +132,14 @@ class MainActivity : ComponentActivity() {
                         ) {
                             pantallaActual = "TRABAJOS"
                         }
+
+                        BotonNavegacion(
+                            texto = "Fotos",
+                            seleccionado = pantallaActual == "FOTOGRAFIAS",
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            pantallaActual = "FOTOGRAFIAS"
+                        }
                     }
 
                     // Muestra únicamente el módulo seleccionado.
@@ -136,6 +156,8 @@ class MainActivity : ComponentActivity() {
                             "COTIZACIONES" -> CotizacionScreen(cotizacionViewModel)
 
                             "TRABAJOS" -> TrabajoScreen(trabajoViewModel)
+
+                            "FOTOGRAFIAS" -> FotoTrabajoScreen(fotoTrabajoViewModel)
                         }
                     }
                 }
