@@ -38,6 +38,7 @@ import com.tapiceria.app.ui.fotografias.FotoTrabajoViewModelFactory
 import com.tapiceria.app.ui.pagos.PagoScreen
 import com.tapiceria.app.ui.pagos.PagoViewModel
 import com.tapiceria.app.ui.pagos.PagoViewModelFactory
+import com.tapiceria.app.ui.respaldo.RespaldoScreen
 
 import com.tapiceria.app.ui.trabajos.TrabajoScreen
 import com.tapiceria.app.ui.trabajos.TrabajoViewModel
@@ -180,6 +181,12 @@ class MainActivity : ComponentActivity() {
                             seleccionado = pantallaActual == "EXPORTAR",
                             onClick = { pantallaActual = "EXPORTAR" }
                         )
+
+                        BotonNavegacion(
+                            texto = "Respaldo",
+                            seleccionado = pantallaActual == "RESPALDO",
+                            onClick = { pantallaActual = "RESPALDO" }
+                        )
                     }
 
                     // Muestra únicamente el módulo seleccionado.
@@ -204,6 +211,8 @@ class MainActivity : ComponentActivity() {
                             "INICIO" -> DashboardScreen(dashboardViewModel)
 
                             "EXPORTAR" -> ExportacionScreen()
+
+                            "RESPALDO" -> RespaldoScreen()
                         }
                     }
                 }
