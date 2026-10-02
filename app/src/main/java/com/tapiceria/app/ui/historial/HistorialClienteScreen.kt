@@ -37,6 +37,31 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+// Ventana ampliada y controles de la fotografía.
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+
+// Gestos para ampliar, reducir y mover la fotografía.
+import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.*
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 
 /**
  * Pantalla de consulta del historial de un cliente.
@@ -427,30 +452,182 @@ private fun TarjetaPago(
     }
 }
 
+/**
+ * Muestra una fotografía del trabajo y permite abrirla en una vista ampliada.
+ */
 @Composable
-private fun TarjetaFotografia(foto: FotoTrabajoEntity) {
+private fun TarjetaFotografia(
+    foto: FotoTrabajoEntity
+) {
     val context = LocalContext.current
 
-    // La base de datos almacena una ruta relativa, no la imagen completa.
-    val archivo = File(context.filesDir, foto.rutaArchivo)
+    // Las fotografías se guardan en el almacenamiento privado de la aplicación.
+    val archivoFoto = remember(foto.rutaArchivo) {
+        File(context.filesDir, foto.rutaArchivo)
+    }
 
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(
-            text = "Tipo: ${foto.tipo}",
-            style = MaterialTheme.typography.titleSmall
-        )
+    // Controla la apertura de la vista ampliada.
+    var mostrarImagenAmpliada by remember(foto.rutaArchivo) {
+        mutableStateOf(false)
+    }
 
-        AsyncImage(
-            model = archivo,
-            contentDescription = "Fotografía ${foto.tipo}",
+    Card(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 4.dp),
-            contentScale = ContentScale.FillWidth
+                .padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = "Fotografía ${foto.tipo}",
+                style = MaterialTheme.typography.titleMedium
+            )
+
+            // La imagen se puede tocar para abrirla en grande.
+            AsyncImage(
+                model = archivoFoto,
+                contentDescription = "Fotografía ${foto.tipo} del trabajo",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .clickable {
+                        if (archivoFoto.exists()) {
+                            mostrarImagenAmpliada = true
+                        }
+                    },
+                contentScale = ContentScale.Fit
+            )
+
+            if (!foto.descripcion.isNullOrBlank()) {
+                TextoDato(
+                    etiqueta = "Descripción",
+                    valor = foto.descripcion
+                )
+            }
+
+            TextoDato(
+                etiqueta = "Fecha de registro",
+                valor = foto.fechaRegistro.toString()
+            )
+        }
+    }
+
+    // La ventana se muestra solamente cuando el usuario selecciona la imagen.
+    if (mostrarImagenAmpliada) {
+        Dialog(
+            onDismissRequest = {
+                mostrarImagenAmpliada = false
+            },
+            properties = DialogProperties(
+                usePlatformDefaultWidth = false
+            )
+        ) {
+            ImagenTrabajoAmpliada(
+                archivo = archivoFoto,
+                rotacionGrados = foto.rotacionGrados,
+                titulo = "Fotografía ${foto.tipo}",
+                onCerrar = {
+                    mostrarImagenAmpliada = false
+                }
+            )
+        }
+    }
+}
+
+/**
+ * Presenta la fotografía en una ventana amplia con gestos de zoom y desplazamiento.
+ */
+@Composable
+private fun ImagenTrabajoAmpliada(
+    archivo: File,
+    rotacionGrados: Int,
+    titulo: String,
+    onCerrar: () -> Unit
+) {
+    // El estado se reinicia al abrir otra fotografía.
+    var escala by remember(archivo.absolutePath) {
+        mutableStateOf(1f)
+    }
+
+    var desplazamientoX by remember(archivo.absolutePath) {
+        mutableStateOf(0f)
+    }
+
+    var desplazamientoY by remember(archivo.absolutePath) {
+        mutableStateOf(0f)
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black)
+            .padding(12.dp)
+    ) {
+        // Encabezado con el nombre y el botón para cerrar.
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = titulo,
+                modifier = Modifier.weight(1f),
+                color = Color.White,
+                style = MaterialTheme.typography.titleMedium
+            )
+
+            IconButton(onClick = onCerrar) {
+                Icon(
+                    imageVector = Icons.Default.Close,
+                    contentDescription = "Cerrar fotografía",
+                    tint = Color.White
+                )
+            }
+        }
+
+        // El usuario puede pellizcar para hacer zoom y arrastrar para desplazarse.
+        AsyncImage(
+            model = archivo,
+            contentDescription = titulo,
+            modifier = Modifier
+                .fillMaxSize()
+                .weight(1f)
+                .pointerInput(archivo.absolutePath) {
+                    detectTransformGestures { _, desplazamiento, factorZoom, _ ->
+                        escala = (escala * factorZoom).coerceIn(1f, 5f)
+
+                        // El desplazamiento solo se aplica cuando la imagen está ampliada.
+                        if (escala > 1f) {
+                            desplazamientoX += desplazamiento.x
+                            desplazamientoY += desplazamiento.y
+                        } else {
+                            desplazamientoX = 0f
+                            desplazamientoY = 0f
+                        }
+                    }
+                }
+                .graphicsLayer {
+                    scaleX = escala
+                    scaleY = escala
+                    translationX = desplazamientoX
+                    translationY = desplazamientoY
+                    rotationZ = rotacionGrados.toFloat()
+                },
+            contentScale = ContentScale.Fit
         )
 
-        TextoDato("Descripción", foto.descripcion)
-        TextoDato("Fecha", foto.fechaRegistro.toString())
-        HorizontalDivider()
+        // Restablece el zoom para volver a ver la imagen completa.
+        TextButton(
+            onClick = {
+                escala = 1f
+                desplazamientoX = 0f
+                desplazamientoY = 0f
+            },
+            modifier = Modifier.align(Alignment.CenterHorizontally)
+        ) {
+            Text("Restablecer zoom", color = Color.White)
+        }
     }
 }

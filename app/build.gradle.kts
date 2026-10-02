@@ -84,6 +84,9 @@ dependencies {
 
     // Carga y muestra imágenes en Jetpack Compose.
     implementation("io.coil-kt:coil-compose:2.7.0")
+
+    // Iconos de Material para Jetpack Compose.
+    implementation("androidx.compose.material:material-icons-extended")
 }
 
     // Configura la ubicación de los esquemas de Room para futuras migraciones.
