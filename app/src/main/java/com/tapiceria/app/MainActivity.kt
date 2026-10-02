@@ -15,6 +15,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -44,6 +45,7 @@ import com.tapiceria.app.ui.pagos.PagoScreen
 import com.tapiceria.app.ui.pagos.PagoViewModel
 import com.tapiceria.app.ui.pagos.PagoViewModelFactory
 import com.tapiceria.app.ui.respaldo.RespaldoScreen
+import com.tapiceria.app.ui.theme.TapiceriaDamianTheme
 
 import com.tapiceria.app.ui.trabajos.TrabajoScreen
 import com.tapiceria.app.ui.trabajos.TrabajoViewModel
@@ -63,7 +65,7 @@ class MainActivity : ComponentActivity() {
         container = (application as TapiceriaApplication).container
 
         setContent {
-            MaterialTheme {
+            TapiceriaDamianTheme() {
                 val clienteViewModel: ClienteViewModel = viewModel(
                     factory = ClienteViewModelFactory(
                         container.clienteRepository
@@ -139,41 +141,83 @@ class MainActivity : ComponentActivity() {
 
                 Column(modifier = Modifier.fillMaxSize()) {
 
-                    // Barra de navegación provisional.
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(8.dp)
-                            .horizontalScroll(rememberScrollState()), // Permite deslizar horizontalmente
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    // Barra de navegación con fondo y elevación para separarla del contenido.
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = MaterialTheme.colorScheme.surface,
+                        shadowElevation = 3.dp
                     ) {
-                        // NOTA: También quitamos el Modifier.weight(1f) para que no se aplasten
-                        BotonNavegacion(texto = "Clientes", seleccionado = pantallaActual == "CLIENTES") {
-                            pantallaActual = "CLIENTES"
-                        }
-                        BotonNavegacion(texto = "Atenciones", seleccionado = pantallaActual == "ATENCIONES") {
-                            pantallaActual = "ATENCIONES"
-                        }
-                        BotonNavegacion(texto = "Cotizaciones", seleccionado = pantallaActual == "COTIZACIONES") {
-                            pantallaActual = "COTIZACIONES"
-                        }
-                        BotonNavegacion(texto = "Trabajos", seleccionado = pantallaActual == "TRABAJOS") {
-                            pantallaActual = "TRABAJOS"
-                        }
-                        BotonNavegacion(texto = "Fotos", seleccionado = pantallaActual == "FOTOGRAFIAS") {
-                            pantallaActual = "FOTOGRAFIAS"
-                        }
-                        BotonNavegacion(texto = "Pagos", seleccionado = pantallaActual == "PAGOS") {
-                            pantallaActual = "PAGOS"
-                        }
-                        BotonNavegacion(texto = "Inicio", seleccionado = pantallaActual == "INICIO") {
-                            pantallaActual = "INICIO"
-                        }
-                        BotonNavegacion(texto = "Exportar", seleccionado = pantallaActual == "EXPORTAR") {
-                            pantallaActual = "EXPORTAR"
-                        }
-                        BotonNavegacion(texto = "Respaldo", seleccionado = pantallaActual == "RESPALDO") {
-                            pantallaActual = "RESPALDO"
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 10.dp)
+                                .horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            // Se conserva la navegación existente.
+
+                            BotonNavegacion(
+                                texto = "Inicio",
+                                seleccionado = pantallaActual == "INICIO"
+                            ) {
+                                pantallaActual = "INICIO"
+                            }
+
+                            BotonNavegacion(
+                                texto = "Clientes",
+                                seleccionado = pantallaActual == "CLIENTES"
+                            ) {
+                                pantallaActual = "CLIENTES"
+                            }
+
+                            BotonNavegacion(
+                                texto = "Atenciones",
+                                seleccionado = pantallaActual == "ATENCIONES"
+                            ) {
+                                pantallaActual = "ATENCIONES"
+                            }
+
+                            BotonNavegacion(
+                                texto = "Cotizaciones",
+                                seleccionado = pantallaActual == "COTIZACIONES"
+                            ) {
+                                pantallaActual = "COTIZACIONES"
+                            }
+
+                            BotonNavegacion(
+                                texto = "Trabajos",
+                                seleccionado = pantallaActual == "TRABAJOS"
+                            ) {
+                                pantallaActual = "TRABAJOS"
+                            }
+
+                            BotonNavegacion(
+                                texto = "Fotos",
+                                seleccionado = pantallaActual == "FOTOGRAFIAS"
+                            ) {
+                                pantallaActual = "FOTOGRAFIAS"
+                            }
+
+                            BotonNavegacion(
+                                texto = "Pagos",
+                                seleccionado = pantallaActual == "PAGOS"
+                            ) {
+                                pantallaActual = "PAGOS"
+                            }
+
+                            BotonNavegacion(
+                                texto = "Exportar",
+                                seleccionado = pantallaActual == "EXPORTAR"
+                            ) {
+                                pantallaActual = "EXPORTAR"
+                            }
+
+                            BotonNavegacion(
+                                texto = "Respaldo",
+                                seleccionado = pantallaActual == "RESPALDO"
+                            ) {
+                                pantallaActual = "RESPALDO"
+                            }
                         }
                     }
 
