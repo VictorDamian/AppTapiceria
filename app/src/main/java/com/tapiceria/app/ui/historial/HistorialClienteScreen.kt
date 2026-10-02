@@ -31,6 +31,12 @@ import com.tapiceria.app.data.local.entity.TrabajoEntity
 import java.io.File
 import java.text.NumberFormat
 import java.util.Locale
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 
 /**
  * Pantalla de consulta del historial de un cliente.
@@ -144,9 +150,13 @@ fun HistorialClienteScreen(
                         TextoVacio("No hay trabajos registrados.")
                     } else {
                         // Muestra cada trabajo junto con sus pagos y su saldo pendiente.
+                        // Cada tarjeta recibe los pagos correspondientes exclusivamente a ese trabajo.
                         historial.trabajos.forEach { trabajo ->
                             TarjetaTrabajo(
                                 trabajo = trabajo,
+                                pagos = historial.pagos.filter { pago ->
+                                    pago.trabajoId == trabajo.id
+                                },
                                 totalPagadoCentavos = historial.totalPagadoTrabajoCentavos(trabajo.id),
                                 saldoPendienteCentavos = historial.saldoTrabajoCentavos(trabajo.id),
                                 moneda = ::moneda
@@ -253,43 +263,149 @@ private fun TarjetaCotizacion(
     }
 }
 
+/**
+ * Muestra los datos de un trabajo y permite consultar su situación financiera.
+ */
 @Composable
 private fun TarjetaTrabajo(
     trabajo: TrabajoEntity,
+    pagos: List<PagoEntity>,
     totalPagadoCentavos: Long,
     saldoPendienteCentavos: Long,
     moneda: (Long) -> String
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        Text(
-            text = trabajo.folio,
-            style = MaterialTheme.typography.titleSmall
-        )
-        Text(trabajo.descripcion)
-        TextoDato("Importe", moneda(trabajo.importeCentavos))
-        TextoDato("Estado", trabajo.estado)
-        TextoDato("Recepción", trabajo.fechaRecepcion.toString())
-        TextoDato(
-            "Entrega estimada",
-            trabajo.fechaEntregaEstimada.toString()
-        )
+    // Controla la visibilidad del detalle financiero.
+    var mostrarDetalle by remember(trabajo.id) {
+        mutableStateOf(false)
+    }
 
-        // Resumen financiero del trabajo.
-        TextoDato(
-            etiqueta = "Total del trabajo",
-            valor = moneda(trabajo.importeCentavos)
-        )
+    Card(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Información general del trabajo.
+            Text(
+                text = "Trabajo ${trabajo.folio}",
+                style = MaterialTheme.typography.titleMedium
+            )
 
-        TextoDato(
-            etiqueta = "Total pagado",
-            valor = moneda(totalPagadoCentavos)
-        )
+            TextoDato(
+                etiqueta = "Descripción",
+                valor = trabajo.descripcion
+            )
 
-        TextoDato(
-            etiqueta = "Saldo pendiente",
-            valor = moneda(saldoPendienteCentavos)
-        )
-        HorizontalDivider()
+            TextoDato(
+                etiqueta = "Estado",
+                valor = trabajo.estado.toString()
+            )
+
+            TextoDato(
+                etiqueta = "Fecha de recepción",
+                valor = trabajo.fechaRecepcion.toString()
+            )
+
+            TextoDato(
+                etiqueta = "Entrega estimada",
+                valor = trabajo.fechaEntregaEstimada.toString()
+            )
+
+            // Resumen financiero del trabajo.
+            HorizontalDivider()
+
+            TextoDato(
+                etiqueta = "Importe del trabajo",
+                valor = moneda(trabajo.importeCentavos)
+            )
+
+            TextoDato(
+                etiqueta = "Total pagado",
+                valor = moneda(totalPagadoCentavos)
+            )
+
+            TextoDato(
+                etiqueta = "Saldo pendiente",
+                valor = moneda(saldoPendienteCentavos)
+            )
+
+            // Permite expandir o contraer los pagos del trabajo.
+            TextButton(
+                onClick = {
+                    mostrarDetalle = !mostrarDetalle
+                },
+                modifier = Modifier.align(Alignment.End)
+            ) {
+                Text(
+                    text = if (mostrarDetalle) {
+                        "Ocultar pagos"
+                    } else {
+                        "Ver pagos (${pagos.size})"
+                    }
+                )
+            }
+
+            // El detalle solo se compone cuando el usuario lo solicita.
+            if (mostrarDetalle) {
+                HorizontalDivider()
+
+                Text(
+                    text = "Detalle de pagos",
+                    style = MaterialTheme.typography.titleSmall
+                )
+
+                if (pagos.isEmpty()) {
+                    TextoVacio(
+                        mensaje = "Este trabajo todavía no tiene pagos registrados."
+                    )
+                } else {
+                    // Muestra primero los pagos más recientes.
+                    pagos.sortedByDescending { it.fechaPago }
+                        .forEach { pago ->
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                TextoDato(
+                                    etiqueta = "Importe",
+                                    valor = moneda(pago.importeCentavos)
+                                )
+
+                                TextoDato(
+                                    etiqueta = "Fecha",
+                                    valor = pago.fechaPago.toString()
+                                )
+
+                                TextoDato(
+                                    etiqueta = "Método",
+                                    valor = pago.metodo.toString()
+                                )
+
+                                if (!pago.referencia.isNullOrBlank()) {
+                                    TextoDato(
+                                        etiqueta = "Referencia",
+                                        valor = pago.referencia
+                                    )
+                                }
+
+                                if (!pago.notas.isNullOrBlank()) {
+                                    TextoDato(
+                                        etiqueta = "Notas",
+                                        valor = pago.notas
+                                    )
+                                }
+
+                                HorizontalDivider()
+                            }
+                        }
+                }
+            }
+        }
     }
 }
 
