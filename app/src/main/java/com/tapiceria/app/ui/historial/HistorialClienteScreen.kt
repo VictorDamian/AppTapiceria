@@ -143,9 +143,12 @@ fun HistorialClienteScreen(
                     if (historial.trabajos.isEmpty()) {
                         TextoVacio("No hay trabajos registrados.")
                     } else {
+                        // Muestra cada trabajo junto con sus pagos y su saldo pendiente.
                         historial.trabajos.forEach { trabajo ->
                             TarjetaTrabajo(
                                 trabajo = trabajo,
+                                totalPagadoCentavos = historial.totalPagadoTrabajoCentavos(trabajo.id),
+                                saldoPendienteCentavos = historial.saldoTrabajoCentavos(trabajo.id),
                                 moneda = ::moneda
                             )
                         }
@@ -253,6 +256,8 @@ private fun TarjetaCotizacion(
 @Composable
 private fun TarjetaTrabajo(
     trabajo: TrabajoEntity,
+    totalPagadoCentavos: Long,
+    saldoPendienteCentavos: Long,
     moneda: (Long) -> String
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -267,6 +272,22 @@ private fun TarjetaTrabajo(
         TextoDato(
             "Entrega estimada",
             trabajo.fechaEntregaEstimada.toString()
+        )
+
+        // Resumen financiero del trabajo.
+        TextoDato(
+            etiqueta = "Total del trabajo",
+            valor = moneda(trabajo.importeCentavos)
+        )
+
+        TextoDato(
+            etiqueta = "Total pagado",
+            valor = moneda(totalPagadoCentavos)
+        )
+
+        TextoDato(
+            etiqueta = "Saldo pendiente",
+            valor = moneda(saldoPendienteCentavos)
         )
         HorizontalDivider()
     }

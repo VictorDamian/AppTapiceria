@@ -4,12 +4,14 @@ package com.tapiceria.app
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -141,72 +143,38 @@ class MainActivity : ComponentActivity() {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            .padding(8.dp)
+                            .horizontalScroll(rememberScrollState()), // Permite deslizar horizontalmente
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        BotonNavegacion(
-                            texto = "Clientes",
-                            seleccionado = pantallaActual == "CLIENTES",
-                            modifier = Modifier.weight(1f)
-                        ) {
+                        // NOTA: También quitamos el Modifier.weight(1f) para que no se aplasten
+                        BotonNavegacion(texto = "Clientes", seleccionado = pantallaActual == "CLIENTES") {
                             pantallaActual = "CLIENTES"
                         }
-
-                        BotonNavegacion(
-                            texto = "Atenciones",
-                            seleccionado = pantallaActual == "ATENCIONES",
-                            modifier = Modifier.weight(1f)
-                        ) {
+                        BotonNavegacion(texto = "Atenciones", seleccionado = pantallaActual == "ATENCIONES") {
                             pantallaActual = "ATENCIONES"
                         }
-
-                        BotonNavegacion(
-                            texto = "Cotizaciones",
-                            seleccionado = pantallaActual == "COTIZACIONES",
-                            modifier = Modifier.weight(1f)
-                        ) {
+                        BotonNavegacion(texto = "Cotizaciones", seleccionado = pantallaActual == "COTIZACIONES") {
                             pantallaActual = "COTIZACIONES"
                         }
-
-                        BotonNavegacion(
-                            texto = "Trabajos",
-                            seleccionado = pantallaActual == "TRABAJOS",
-                            modifier = Modifier.weight(1f)
-                        ) {
+                        BotonNavegacion(texto = "Trabajos", seleccionado = pantallaActual == "TRABAJOS") {
                             pantallaActual = "TRABAJOS"
                         }
-
-                        BotonNavegacion(
-                            texto = "Fotos",
-                            seleccionado = pantallaActual == "FOTOGRAFIAS",
-                            modifier = Modifier.weight(1f)
-                        ) {
+                        BotonNavegacion(texto = "Fotos", seleccionado = pantallaActual == "FOTOGRAFIAS") {
                             pantallaActual = "FOTOGRAFIAS"
                         }
-
-                        BotonNavegacion(
-                            texto = "Pagos",
-                            seleccionado = pantallaActual == "PAGOS",
-                            onClick = { pantallaActual = "PAGOS" }
-                        )
-
-                        BotonNavegacion(
-                            texto = "Inicio",
-                            seleccionado = pantallaActual == "INICIO",
-                            onClick = { pantallaActual = "INICIO" }
-                        )
-
-                        BotonNavegacion(
-                            texto = "Exportar",
-                            seleccionado = pantallaActual == "EXPORTAR",
-                            onClick = { pantallaActual = "EXPORTAR" }
-                        )
-
-                        BotonNavegacion(
-                            texto = "Respaldo",
-                            seleccionado = pantallaActual == "RESPALDO",
-                            onClick = { pantallaActual = "RESPALDO" }
-                        )
+                        BotonNavegacion(texto = "Pagos", seleccionado = pantallaActual == "PAGOS") {
+                            pantallaActual = "PAGOS"
+                        }
+                        BotonNavegacion(texto = "Inicio", seleccionado = pantallaActual == "INICIO") {
+                            pantallaActual = "INICIO"
+                        }
+                        BotonNavegacion(texto = "Exportar", seleccionado = pantallaActual == "EXPORTAR") {
+                            pantallaActual = "EXPORTAR"
+                        }
+                        BotonNavegacion(texto = "Respaldo", seleccionado = pantallaActual == "RESPALDO") {
+                            pantallaActual = "RESPALDO"
+                        }
                     }
 
                     // Muestra únicamente el módulo seleccionado.
