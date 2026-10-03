@@ -38,6 +38,11 @@ import com.tapiceria.app.domain.model.CotizacionListado
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Surface
+import androidx.compose.ui.text.font.FontWeight
 
 /**
  * Pantalla para registrar y administrar cotizaciones.
@@ -51,13 +56,17 @@ fun CotizacionScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // Conserva el contenido actual de CotizacionScreen.
         Text(
             text = "Cotizaciones",
-            style = MaterialTheme.typography.headlineMedium
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground
         )
 
         estado.error?.let {
@@ -92,7 +101,9 @@ fun CotizacionScreen(
 
         Text(
             text = "Historial",
-            style = MaterialTheme.typography.titleLarge
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground
         )
 
         when {
@@ -160,10 +171,15 @@ private fun FormularioCotizacion(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp
         )
     ) {
+        // Conserva todos los campos y el botón de registro actuales.
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -280,6 +296,10 @@ private fun FormularioCotizacion(
 /**
  * Tarjeta de una cotización registrada.
  */
+/**
+ * Tarjeta visual de una cotización.
+ * Conserva los importes, fechas, estados y acciones existentes.
+ */
 @Composable
 private fun CotizacionItem(
     cotizacion: CotizacionListado,
@@ -291,56 +311,111 @@ private fun CotizacionItem(
         String.format(Locale("es", "MX"), "$%,.2f", importe)
     }
 
+    val colorEstado = when (cotizacion.estado) {
+        "ACEPTADA" -> MaterialTheme.colorScheme.primary
+        "RECHAZADA", "VENCIDA" -> MaterialTheme.colorScheme.error
+        else -> MaterialTheme.colorScheme.secondary
+    }
+
     Card(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp
+        )
     ) {
         Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(5.dp)
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
                 text = cotizacion.folio,
-                style = MaterialTheme.typography.titleMedium
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary
             )
 
             Text(
                 text = cotizacion.nombreCliente,
-                style = MaterialTheme.typography.bodyLarge
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Text(
                 text = cotizacion.descripcionCotizacion,
-                style = MaterialTheme.typography.bodyMedium
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Text(
                 text = "Solicitud: ${cotizacion.descripcionAtencion}",
-                style = MaterialTheme.typography.bodySmall
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            Text(
-                text = "Importe: $importeFormateado MXN",
-                style = MaterialTheme.typography.titleSmall
-            )
+            // Destacamos el importe sin modificar su cálculo.
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = MaterialTheme.colorScheme.secondaryContainer
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                ) {
+                    Text(
+                        text = "Importe",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
 
-            Text("Creada: ${formatearFecha(cotizacion.fechaCreacion)}")
-
-            cotizacion.fechaVigencia?.let {
-                Text("Vigencia: ${formatearFecha(it)}")
+                    Text(
+                        text = "$importeFormateado MXN",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                    )
+                }
             }
 
             Text(
-                text = "Estado: ${cotizacion.estado}",
-                color = when (cotizacion.estado) {
-                    "ACEPTADA" -> MaterialTheme.colorScheme.primary
-                    "RECHAZADA", "VENCIDA" ->
-                        MaterialTheme.colorScheme.error
-                    else -> MaterialTheme.colorScheme.secondary
-                },
-                style = MaterialTheme.typography.labelLarge
+                text = "Creada: ${formatearFecha(cotizacion.fechaCreacion)}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
+            cotizacion.fechaVigencia?.let { fecha ->
+                Text(
+                    text = "Vigencia: ${formatearFecha(fecha)}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            // Etiqueta de estado con el color correspondiente.
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = colorEstado.copy(alpha = 0.12f)
+            ) {
+                Text(
+                    text = cotizacion.estado,
+                    modifier = Modifier.padding(
+                        horizontal = 10.dp,
+                        vertical = 6.dp
+                    ),
+                    color = colorEstado,
+                    style = MaterialTheme.typography.labelLarge
+                )
+            }
+
+            // Las acciones solo aparecen para cotizaciones pendientes.
             if (cotizacion.estado == "PENDIENTE") {
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outlineVariant
+                )
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)

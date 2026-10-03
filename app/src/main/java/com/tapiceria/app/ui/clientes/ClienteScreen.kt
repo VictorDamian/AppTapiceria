@@ -31,6 +31,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.tapiceria.app.data.local.entity.ClienteEntity
 
+// card
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.text.font.FontWeight
+
 /**
  * Pantalla principal de gestión de clientes.
  *
@@ -66,18 +82,26 @@ fun ClienteScreen(
     }
 
     Scaffold(
+        containerColor = MaterialTheme.colorScheme.background,
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
                     clienteEditar = null
                     mostrarFormulario = true
                     viewModel.limpiarMensajes()
-                }
+                },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
             ) {
-                Text("+")
+                // Conservamos la acción de registrar un cliente.
+                Text(
+                    text = "+",
+                    style = MaterialTheme.typography.headlineSmall
+                )
             }
         }
     ) { paddingValues ->
+        // Conserva aquí el contenido actual de la pantalla.
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -86,7 +110,9 @@ fun ClienteScreen(
         ) {
             Text(
                 text = "Clientes",
-                style = MaterialTheme.typography.headlineMedium
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -223,6 +249,10 @@ fun ClienteScreen(
 }
 
 /** Tarjeta con los datos principales y las acciones del cliente. */
+/**
+ * Tarjeta visual de un cliente.
+ * Conserva las acciones existentes de edición, historial y desactivación.
+ */
 @Composable
 private fun ClienteCard(
     cliente: ClienteEntity,
@@ -230,34 +260,93 @@ private fun ClienteCard(
     onDesactivar: () -> Unit,
     onVerHistorial: () -> Unit
 ) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp)) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             Text(
                 text = cliente.nombre,
-                style = MaterialTheme.typography.titleMedium
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             if (cliente.telefono.isNotBlank()) {
-                Text("Teléfono: ${cliente.telefono}")
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Phone,
+                        contentDescription = "Teléfono",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp)
+                    )
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Text(
+                        text = cliente.telefono,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
 
             if (cliente.direccion.isNotBlank()) {
-                Text("Dirección: ${cliente.direccion}")
+                Row(verticalAlignment = Alignment.Top) {
+                    Icon(
+                        imageVector = Icons.Default.LocationOn,
+                        contentDescription = "Dirección",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp)
+                    )
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Text(
+                        text = cliente.direccion,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
 
-            Row(
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant
+            )
+
+            // Distribuye las acciones en varias líneas si falta espacio.
+            FlowRow(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 OutlinedButton(onClick = onEditar) {
                     Text("Editar")
                 }
 
-                OutlinedButton(onClick = onVerHistorial) {
+                Button(
+                    onClick = onVerHistorial,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    )
+                ) {
                     Text("Ver historial")
                 }
 
-                TextButton(onClick = onDesactivar) {
+                TextButton(
+                    onClick = onDesactivar,
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
                     Text("Desactivar")
                 }
             }

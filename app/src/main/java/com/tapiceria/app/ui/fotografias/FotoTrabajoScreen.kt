@@ -4,6 +4,7 @@ package com.tapiceria.app.ui.fotografias
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.core.content.FileProvider
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,13 +16,21 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -32,7 +41,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -42,6 +54,8 @@ import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import androidx.compose.ui.platform.LocalLocale
+import androidx.compose.ui.text.font.FontWeight
 
 /**
  * Pantalla para registrar y consultar fotografías de cada trabajo.
@@ -90,13 +104,18 @@ fun FotoTrabajoScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // Conserva los selectores, botones y listado actuales.
         Text(
             text = "Fotografías",
-            style = MaterialTheme.typography.headlineMedium
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground
+
         )
 
         estado.error?.let {
@@ -160,7 +179,9 @@ fun FotoTrabajoScreen(
 
             Text(
                 text = "Tipo de fotografía",
-                style = MaterialTheme.typography.titleMedium
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
             )
 
             Row(
@@ -261,11 +282,15 @@ fun FotoTrabajoScreen(
 
             Text(
                 text = "Fotografías del trabajo",
-                style = MaterialTheme.typography.titleLarge
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
             )
 
             if (estado.fotografias.isEmpty()) {
-                Text("Este trabajo todavía no tiene fotografías.")
+                Text("Este trabajo todavía no tiene fotografías.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant)
             } else {
                 // La pantalla ya tiene desplazamiento vertical; usamos
                 // Column para evitar anidar otra lista desplazable.
@@ -314,6 +339,10 @@ private fun BotonTipoFoto(
 /**
  * Muestra la imagen y sus metadatos.
  */
+/**
+ * Muestra una fotografía registrada con una presentación uniforme.
+ * La eliminación conserva el callback proporcionado por la pantalla.
+ */
 @Composable
 private fun FotoTrabajoItem(
     foto: FotoTrabajoEntity,
@@ -324,19 +353,41 @@ private fun FotoTrabajoItem(
         File(context.filesDir, foto.rutaArchivo)
     }
 
-    Card(modifier = Modifier.fillMaxWidth()) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp
+        )
+    ) {
         Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Text(
-                text = if (foto.tipo == "DESPUES") {
-                    "DESPUÉS"
-                } else {
-                    "ANTES"
-                },
-                style = MaterialTheme.typography.titleMedium
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = if (foto.tipo == "DESPUES") {
+                        "DESPUÉS"
+                    } else {
+                        "ANTES"
+                    },
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+
+                Text(
+                    text = "${foto.rotacionGrados}°",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
 
             if (archivo.exists()) {
                 AsyncImage(
@@ -347,37 +398,52 @@ private fun FotoTrabajoItem(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(220.dp)
+                        .clip(RoundedCornerShape(12.dp)),
+                    contentScale = ContentScale.Fit
                 )
             } else {
                 Text(
                     text = "El archivo de imagen no está disponible.",
-                    color = MaterialTheme.colorScheme.error
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodyMedium
                 )
             }
 
             if (foto.descripcion.isNotBlank()) {
-                Text(foto.descripcion)
+                Text(
+                    text = foto.descripcion,
+                    style = MaterialTheme.typography.bodyMedium
+                )
             }
+
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outlineVariant
+            )
 
             Text(
                 text = "Fecha: ${
                     SimpleDateFormat(
                         "dd/MM/yyyy HH:mm",
-                        Locale.getDefault()
+                        LocalLocale.current.platformLocale
                     ).format(Date(foto.fechaRegistro))
                 }",
-                        style = MaterialTheme.typography.bodySmall
-            )
-
-            Text(
-                text = "Rotación: ${foto.rotacionGrados}°",
-                style = MaterialTheme.typography.bodySmall
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             OutlinedButton(
                 onClick = onEliminar,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = MaterialTheme.colorScheme.error
+                )
             ) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = null
+                )
+
+                Spacer(modifier = Modifier.width(8.dp))
                 Text("Eliminar fotografía")
             }
         }

@@ -1,6 +1,7 @@
 
 package com.tapiceria.app.ui.pagos
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,9 +10,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -33,6 +36,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.tapiceria.app.data.local.entity.PagoEntity
@@ -58,19 +62,23 @@ fun PagoScreen(viewModel: PagoViewModel) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState()) // Permite desplazarse por toda la pantalla.
+            .background(MaterialTheme.colorScheme.background)
+            .verticalScroll(rememberScrollState())
             .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // Conserva aquí todos los elementos actuales de PagoScreen:
         // selector de trabajo, resumen, formulario e historial.
         Text(
             text = "Pagos y saldos",
-            style = MaterialTheme.typography.headlineMedium
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground
         )
 
         // Selector del trabajo al que se aplicará el pago.
-        Text("Trabajo")
+        Text("Trabajo",
+            color = MaterialTheme.colorScheme.onBackground)
 
         Column {
             OutlinedButton(
@@ -112,8 +120,12 @@ fun PagoScreen(viewModel: PagoViewModel) {
         // Resumen del importe acordado, pagos y saldo pendiente.
         Card(
             modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(18.dp),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
+                containerColor = MaterialTheme.colorScheme.surface
+            ),
+            elevation = CardDefaults.cardElevation(
+                defaultElevation = 2.dp
             )
         ) {
             Column(
@@ -138,7 +150,8 @@ fun PagoScreen(viewModel: PagoViewModel) {
 
         Text(
             text = "Registrar pago",
-            style = MaterialTheme.typography.titleLarge
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         OutlinedTextField(
@@ -154,13 +167,14 @@ fun PagoScreen(viewModel: PagoViewModel) {
         )
 
         // Selector del método de pago.
-        Text("Método de pago")
+        Text("Método de pago",
+            color = MaterialTheme.colorScheme.onSurfaceVariant)
 
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            listOf("EFECTIVO", "TRANSFERENCIA", "TARJETA").forEach { metodo ->
+            listOf("EFECTIVO", "TRANSFERENCIA").forEach { metodo ->
                 OutlinedButton(
                     onClick = { viewModel.cambiarMetodo(metodo) },
                     modifier = Modifier.weight(1f),
@@ -176,7 +190,8 @@ fun PagoScreen(viewModel: PagoViewModel) {
 
         Text(
             text = "Método seleccionado: ${estado.metodo}",
-            style = MaterialTheme.typography.bodySmall
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         OutlinedTextField(
@@ -235,7 +250,8 @@ fun PagoScreen(viewModel: PagoViewModel) {
 
         Text(
             text = "Historial de pagos",
-            style = MaterialTheme.typography.titleLarge
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         if (trabajoSeleccionado != null && estado.pagos.isEmpty()) {
@@ -287,9 +303,9 @@ fun PagoScreen(viewModel: PagoViewModel) {
         )
     }
 }
-
 /**
- * Muestra una línea del resumen financiero.
+ * Presenta una fila del resumen financiero.
+ * El saldo pendiente recibe mayor énfasis visual.
  */
 @Composable
 private fun FilaImporte(
@@ -299,23 +315,33 @@ private fun FilaImporte(
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = etiqueta,
+            modifier = Modifier.weight(1f),
             style = if (destacado) {
                 MaterialTheme.typography.titleMedium
             } else {
                 MaterialTheme.typography.bodyMedium
-            }
+            },
+            color = MaterialTheme.colorScheme.onSurface
         )
+
+        Spacer(modifier = Modifier.width(12.dp))
 
         Text(
             text = formatoMoneda(centavos),
             style = if (destacado) {
-                MaterialTheme.typography.titleMedium
+                MaterialTheme.typography.titleLarge
             } else {
                 MaterialTheme.typography.bodyMedium
+            },
+            color = if (destacado) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.onSurface
             }
         )
     }
@@ -333,11 +359,17 @@ private fun PagoItem(
         SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
     }
 
-    Card(modifier = Modifier.fillMaxWidth()) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(12.dp),
+
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
