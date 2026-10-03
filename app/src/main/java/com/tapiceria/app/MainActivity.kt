@@ -3,6 +3,7 @@ package com.tapiceria.app
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -11,8 +12,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Backup
@@ -75,7 +79,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
+        // Configura bordes a borde oficiales de Android
+        enableEdgeToEdge()
         container = (application as TapiceriaApplication).container
 
         setContent {
@@ -139,183 +144,196 @@ class MainActivity : ComponentActivity() {
                     )
                 )
 
-                Column(modifier = Modifier.fillMaxSize()) {
-
-                    // Contenedor de la navegación dividida
-                    Surface(
-                        modifier = Modifier.fillMaxWidth(),
-                        color = MaterialTheme.colorScheme.surface,
-                        shadowElevation = 4.dp
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 8.dp)
-                        ) {
-                            // --- SECCIÓN 1: Accesos principales (Arriba: 4 botones) ---
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 8.dp),
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                BotonNavegacionItem(
-                                    texto = "Inicio",
-                                    icono = Icons.Default.Home,
-                                    seleccionado = pantallaActual == "INICIO",
-                                    modifier = Modifier.weight(1f)
-                                ) { pantallaActual = "INICIO" }
-
-                                BotonNavegacionItem(
-                                    texto = "Fotos",
-                                    icono = Icons.Default.CameraAlt,
-                                    seleccionado = pantallaActual == "FOTOGRAFIAS",
-                                    modifier = Modifier.weight(1f)
-                                ) { pantallaActual = "FOTOGRAFIAS" }
-
-                                BotonNavegacionItem(
-                                    texto = "Exportar",
-                                    icono = Icons.Default.FileDownload,
-                                    seleccionado = pantallaActual == "EXPORTAR",
-                                    modifier = Modifier.weight(1f)
-                                ) { pantallaActual = "EXPORTAR" }
-
-                                BotonNavegacionItem(
-                                    texto = "Respaldo",
-                                    icono = Icons.Default.Backup,
-                                    seleccionado = pantallaActual == "RESPALDO",
-                                    modifier = Modifier.weight(1f)
-                                ) { pantallaActual = "RESPALDO" }
-                            }
-
-                            HorizontalDivider(
-                                modifier = Modifier.padding(vertical = 8.dp),
-                                thickness = 1.dp,
-                                color = MaterialTheme.colorScheme.outlineVariant
-                            )
-
-                            // --- SECCIÓN 2: Barra de navegación inferior con Scroll ---
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .horizontalScroll(rememberScrollState())
-                                    .padding(horizontal = 8.dp),
-                                horizontalArrangement = Arrangement.spacedBy(6.dp)
-                            ) {
-                                BotonNavegacionItem(
-                                    texto = "Clientes",
-                                    icono = Icons.Default.People,
-                                    seleccionado = pantallaActual == "CLIENTES"
-                                ) { pantallaActual = "CLIENTES" }
-
-                                BotonNavegacionItem(
-                                    texto = "Atenciones",
-                                    icono = Icons.Default.SupportAgent,
-                                    seleccionado = pantallaActual == "ATENCIONES"
-                                ) { pantallaActual = "ATENCIONES" }
-
-                                BotonNavegacionItem(
-                                    texto = "Cotizaciones",
-                                    icono = Icons.Default.Receipt,
-                                    seleccionado = pantallaActual == "COTIZACIONES"
-                                ) { pantallaActual = "COTIZACIONES" }
-
-                                BotonNavegacionItem(
-                                    texto = "Trabajos",
-                                    icono = Icons.Default.Build,
-                                    seleccionado = pantallaActual == "TRABAJOS"
-                                ) { pantallaActual = "TRABAJOS" }
-
-                                BotonNavegacionItem(
-                                    texto = "Pagos",
-                                    icono = Icons.Default.MonetizationOn,
-                                    seleccionado = pantallaActual == "PAGOS"
-                                ) { pantallaActual = "PAGOS" }
-                            }
-                        }
-                    }
-
-                    // --- Módulo seleccionado ---
-                    androidx.compose.foundation.layout.Box(
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    Column(
                         modifier = Modifier
                             .fillMaxSize()
-                            .weight(1f)
+                            .statusBarsPadding()    // Evita solapar la barra de notificaciones
+                            .navigationBarsPadding()// Evita solapar la barra de gestos/botones inferior
+                            .imePadding()           // Ajusta el diseño arriba del teclado
                     ) {
-                        when (pantallaActual) {
-                            "CLIENTES" -> ClienteScreen(
-                                viewModel = clienteViewModel,
-                                onVerHistorial = { clienteId ->
-                                    clienteIdHistorial = clienteId
-                                    pantallaActual = "HISTORIAL"
+
+                        // Contenedor de la navegación dividida
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            color = MaterialTheme.colorScheme.surface,
+                            shadowElevation = 4.dp
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 8.dp)
+                            ) {
+                                // --- SECCIÓN 1: Accesos principales (Arriba: 4 botones) ---
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 8.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    BotonNavegacionItem(
+                                        texto = "Inicio",
+                                        icono = Icons.Default.Home,
+                                        seleccionado = pantallaActual == "INICIO",
+                                        modifier = Modifier.weight(1f)
+                                    ) { pantallaActual = "INICIO" }
+
+                                    BotonNavegacionItem(
+                                        texto = "Fotos",
+                                        icono = Icons.Default.CameraAlt,
+                                        seleccionado = pantallaActual == "FOTOGRAFIAS",
+                                        modifier = Modifier.weight(1f)
+                                    ) { pantallaActual = "FOTOGRAFIAS" }
+
+                                    BotonNavegacionItem(
+                                        texto = "Exportar",
+                                        icono = Icons.Default.FileDownload,
+                                        seleccionado = pantallaActual == "EXPORTAR",
+                                        modifier = Modifier.weight(1f)
+                                    ) { pantallaActual = "EXPORTAR" }
+
+                                    BotonNavegacionItem(
+                                        texto = "Respaldo",
+                                        icono = Icons.Default.Backup,
+                                        seleccionado = pantallaActual == "RESPALDO",
+                                        modifier = Modifier.weight(1f)
+                                    ) { pantallaActual = "RESPALDO" }
                                 }
-                            )
-                            "HISTORIAL" -> HistorialClienteScreen(
-                                viewModel = historialClienteViewModel,
-                                onVolver = { pantallaActual = "CLIENTES" }
-                            )
-                            "ATENCIONES" -> AtencionScreen(atencionViewModel)
-                            "COTIZACIONES" -> CotizacionScreen(cotizacionViewModel)
-                            "TRABAJOS" -> TrabajoScreen(trabajoViewModel)
-                            "FOTOGRAFIAS" -> FotoTrabajoScreen(fotoTrabajoViewModel)
-                            "PAGOS" -> PagoScreen(pagoViewModel)
-                            "INICIO" -> DashboardScreen(dashboardViewModel)
-                            "EXPORTAR" -> ExportacionScreen()
-                            "RESPALDO" -> RespaldoScreen()
+
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(vertical = 8.dp),
+                                    thickness = 1.dp,
+                                    color = MaterialTheme.colorScheme.outlineVariant
+                                )
+
+                                // --- SECCIÓN 2: Barra de navegación inferior con Scroll ---
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .horizontalScroll(rememberScrollState())
+                                        .padding(horizontal = 8.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
+                                    BotonNavegacionItem(
+                                        texto = "Clientes",
+                                        icono = Icons.Default.People,
+                                        seleccionado = pantallaActual == "CLIENTES"
+                                    ) { pantallaActual = "CLIENTES" }
+
+                                    BotonNavegacionItem(
+                                        texto = "Atenciones",
+                                        icono = Icons.Default.SupportAgent,
+                                        seleccionado = pantallaActual == "ATENCIONES"
+                                    ) { pantallaActual = "ATENCIONES" }
+
+                                    BotonNavegacionItem(
+                                        texto = "Cotizaciones",
+                                        icono = Icons.Default.Receipt,
+                                        seleccionado = pantallaActual == "COTIZACIONES"
+                                    ) { pantallaActual = "COTIZACIONES" }
+
+                                    BotonNavegacionItem(
+                                        texto = "Trabajos",
+                                        icono = Icons.Default.Build,
+                                        seleccionado = pantallaActual == "TRABAJOS"
+                                    ) { pantallaActual = "TRABAJOS" }
+
+                                    BotonNavegacionItem(
+                                        texto = "Pagos",
+                                        icono = Icons.Default.MonetizationOn,
+                                        seleccionado = pantallaActual == "PAGOS"
+                                    ) { pantallaActual = "PAGOS" }
+                                }
+                            }
+                        }
+
+                        // --- Módulo seleccionado ---
+                        androidx.compose.foundation.layout.Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .weight(1f)
+                        ) {
+                            when (pantallaActual) {
+                                "CLIENTES" -> ClienteScreen(
+                                    viewModel = clienteViewModel,
+                                    onVerHistorial = { clienteId ->
+                                        clienteIdHistorial = clienteId
+                                        pantallaActual = "HISTORIAL"
+                                    }
+                                )
+
+                                "HISTORIAL" -> HistorialClienteScreen(
+                                    viewModel = historialClienteViewModel,
+                                    onVolver = { pantallaActual = "CLIENTES" }
+                                )
+
+                                "ATENCIONES" -> AtencionScreen(atencionViewModel)
+                                "COTIZACIONES" -> CotizacionScreen(cotizacionViewModel)
+                                "TRABAJOS" -> TrabajoScreen(trabajoViewModel)
+                                "FOTOGRAFIAS" -> FotoTrabajoScreen(fotoTrabajoViewModel)
+                                "PAGOS" -> PagoScreen(pagoViewModel)
+                                "INICIO" -> DashboardScreen(dashboardViewModel)
+                                "EXPORTAR" -> ExportacionScreen()
+                                "RESPALDO" -> RespaldoScreen()
+                            }
                         }
                     }
                 }
             }
         }
     }
-}
 
-/**
- * Botón con ícono vertical destacado y respuesta al estado seleccionado.
- */
-@Composable
-private fun BotonNavegacionItem(
-    texto: String,
-    icono: ImageVector,
-    seleccionado: Boolean,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
-) {
-    val containerColor = if (seleccionado) {
-        MaterialTheme.colorScheme.primaryContainer
-    } else {
-        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-    }
-
-    val contentColor = if (seleccionado) {
-        MaterialTheme.colorScheme.onPrimaryContainer
-    } else {
-        MaterialTheme.colorScheme.onSurfaceVariant
-    }
-
-    Card(
-        onClick = onClick,
-        modifier = modifier,
-        colors = CardDefaults.cardColors(
-            containerColor = containerColor,
-            contentColor = contentColor
-        )
+    /**
+     * Botón con ícono vertical destacado y respuesta al estado seleccionado.
+     */
+    @Composable
+    private fun BotonNavegacionItem(
+        texto: String,
+        icono: ImageVector,
+        seleccionado: Boolean,
+        modifier: Modifier = Modifier,
+        onClick: () -> Unit
     ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+        val containerColor = if (seleccionado) {
+            MaterialTheme.colorScheme.primaryContainer
+        } else {
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+        }
+
+        val contentColor = if (seleccionado) {
+            MaterialTheme.colorScheme.onPrimaryContainer
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        }
+
+        Card(
+            onClick = onClick,
+            modifier = modifier,
+            colors = CardDefaults.cardColors(
+                containerColor = containerColor,
+                contentColor = contentColor
+            )
         ) {
-            Icon(
-                imageVector = icono,
-                contentDescription = texto,
-                modifier = Modifier.size(26.dp)
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = texto,
-                fontSize = 12.sp,
-                fontWeight = if (seleccionado) FontWeight.Bold else FontWeight.Normal
-            )
+            Column(
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Icon(
+                    imageVector = icono,
+                    contentDescription = texto,
+                    modifier = Modifier.size(26.dp)
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = texto,
+                    fontSize = 12.sp,
+                    fontWeight = if (seleccionado) FontWeight.Bold else FontWeight.Normal
+                )
+            }
         }
     }
 }
