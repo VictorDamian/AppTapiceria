@@ -1,5 +1,6 @@
 package com.tapiceria.app.ui.clientes
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -53,6 +54,7 @@ import androidx.compose.ui.text.font.FontWeight
  * Permite registrar, editar y desactivar clientes, además de consultar
  * el historial de cada uno.
  */
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun ClienteScreen(
     viewModel: ClienteViewModel,
@@ -100,12 +102,11 @@ fun ClienteScreen(
                 )
             }
         }
-    ) { paddingValues ->
+    ) {
         // Conserva aquí el contenido actual de la pantalla.
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
                 .padding(16.dp)
         ) {
             Text(
