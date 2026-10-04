@@ -7,7 +7,10 @@ import androidx.room.PrimaryKey
 
 /**
  * Registra una visita o solicitud de un cliente.
- * Una atención puede ser una consulta o una solicitud de cotización.
+ *
+ * La atención puede quedar temporalmente sin cliente asociado.
+ * Esto permite registrar consultas de personas que todavía no
+ * proporcionaron sus datos.
  */
 @Entity(
     tableName = "atenciones",
@@ -25,7 +28,8 @@ data class AtencionEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
 
-    val clienteId: Long,
+    // NULL representa una atención sin cliente identificado.
+    val clienteId: Long? = null,
 
     // Valores previstos: CONSULTA y COTIZACION.
     val tipo: String,
