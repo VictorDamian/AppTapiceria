@@ -1,4 +1,3 @@
-
 package com.tapiceria.app.domain.model
 
 /**
@@ -7,7 +6,7 @@ package com.tapiceria.app.domain.model
  */
 data class AtencionListado(
     val id: Long,
-    val clienteId: Long,
+    val clienteId: Long?,
     val nombreCliente: String,
     val tipo: String,
     val descripcion: String,
