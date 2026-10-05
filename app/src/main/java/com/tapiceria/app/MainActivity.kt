@@ -111,8 +111,9 @@ class MainActivity : ComponentActivity() {
 
                 val trabajoViewModel: TrabajoViewModel = viewModel(
                     factory = TrabajoViewModelFactory(
-                        container.trabajoRepository,
-                        container.clienteRepository
+                        trabajoRepository = container.trabajoRepository,
+                        clienteRepository = container.clienteRepository,
+                        pagoRepository = container.pagoRepository
                     )
                 )
 

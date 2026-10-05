@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tapiceria.app.data.local.entity.TrabajoEntity
 import com.tapiceria.app.domain.repository.ClienteRepository
+import com.tapiceria.app.domain.repository.PagoRepository
 import com.tapiceria.app.domain.repository.TrabajoRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,7 +25,8 @@ import java.util.Locale
  */
 class TrabajoViewModel(
     private val trabajoRepository: TrabajoRepository,
-    private val clienteRepository: ClienteRepository
+    private val clienteRepository: ClienteRepository,
+    private val pagoRepository: PagoRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(TrabajoUiState())
@@ -65,7 +67,7 @@ class TrabajoViewModel(
 
     private fun observarClientes() {
         viewModelScope.launch {
-            clienteRepository.observarActivos()
+            clienteRepository.observarTodos()
                 .catch {
                     mostrarError("No fue posible cargar los clientes.")
                 }
@@ -282,10 +284,22 @@ class TrabajoViewModel(
     }
 
     /**
-     * Cambia el estado del trabajo. La fecha real se establece al entregarlo.
+     * Cambia el estado del trabajo.
+     *
+     * Reglas:
+     * - ENTREGADO es un estado final.
+     * - CANCELADO puede revertirse posteriormente.
+     * - Para entregar primero debe estar TERMINADO.
+     * - Cancelar no elimina los pagos existentes.
      */
-    fun cambiarEstado(id: Long, nuevoEstado: String) {
-        if (nuevoEstado !in estadosPermitidos) return
+    fun cambiarEstado(
+        id: Long,
+        nuevoEstado: String
+    ) {
+        if (nuevoEstado !in estadosPermitidos) {
+            mostrarError("El estado seleccionado no es válido.")
+            return
+        }
 
         viewModelScope.launch {
             try {
@@ -296,14 +310,24 @@ class TrabajoViewModel(
                     return@launch
                 }
 
-                if (trabajo.estado == "ENTREGADO" ||
-                    trabajo.estado == "CANCELADO"
-                ) {
-                    mostrarError("El trabajo ya está cerrado.")
+                /*
+                 * ENTREGADO sí es definitivo.
+                 *
+                 * CANCELADO NO es definitivo porque el requerimiento permite
+                 * volver posteriormente a otro estado.
+                 */
+                if (trabajo.estado == "ENTREGADO") {
+                    mostrarError(
+                        "Un trabajo entregado no puede cambiar de estado."
+                    )
                     return@launch
                 }
 
-                if (nuevoEstado == "ENTREGADO" &&
+                /*
+                 * Para marcar como ENTREGADO primero debe pasar por TERMINADO.
+                 */
+                if (
+                    nuevoEstado == "ENTREGADO" &&
                     trabajo.estado != "TERMINADO"
                 ) {
                     mostrarError(
@@ -314,22 +338,55 @@ class TrabajoViewModel(
 
                 val actualizado = trabajo.copy(
                     estado = nuevoEstado,
-                    fechaEntregaReal = if (nuevoEstado == "ENTREGADO") {
-                        System.currentTimeMillis()
-                    } else {
-                        trabajo.fechaEntregaReal
-                    }
+
+                    /*
+                     * La fecha real solamente se registra al entregar.
+                     *
+                     * Si regresamos desde CANCELADO a otro estado,
+                     * conservamos la fecha existente porque no corresponde
+                     * modificarla hasta que realmente se entregue.
+                     */
+                    fechaEntregaReal =
+                        if (nuevoEstado == "ENTREGADO") {
+                            System.currentTimeMillis()
+                        } else {
+                            trabajo.fechaEntregaReal
+                        }
                 )
 
                 trabajoRepository.actualizar(actualizado)
 
                 _uiState.update {
-                    it.copy(mensaje = "Estado del trabajo actualizado.")
+                    it.copy(
+                        mensaje = when (nuevoEstado) {
+                            "CANCELADO" ->
+                                "Trabajo cancelado correctamente."
+
+                            else ->
+                                "Estado del trabajo actualizado."
+                        }
+                    )
                 }
+
             } catch (_: Exception) {
-                mostrarError("No fue posible actualizar el trabajo.")
+                mostrarError(
+                    "No fue posible actualizar el estado del trabajo."
+                )
             }
         }
+    }
+
+    /**
+     * Obtiene el total que ya ha sido pagado de un trabajo.
+     *
+     * Se consulta directamente al repositorio para trabajar con el valor
+     * actual de la base de datos y no con información potencialmente antigua
+     * de la interfaz.
+     */
+    private suspend fun obtenerTotalPagado(
+        trabajoId: Long
+    ): Long {
+        return pagoRepository.obtenerTotalPagado(trabajoId)
     }
 
     private fun convertirImporteCentavos(valor: String): Long? {

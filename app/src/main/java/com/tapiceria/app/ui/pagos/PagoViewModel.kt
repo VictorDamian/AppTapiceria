@@ -159,7 +159,18 @@ class PagoViewModel(
                 // Revalida el saldo con el valor más reciente de la base de datos.
                 val totalActual = pagoRepository.obtenerTotalPagado(trabajoId)
                 val trabajoActual = trabajoRepository.obtenerPorId(trabajoId)
-                    ?: throw IllegalStateException("El trabajo ya no existe.")
+                    ?: throw IllegalStateException(
+                        "El trabajo ya no existe."
+                    )
+
+                // Un trabajo cancelado conserva sus pagos históricos,
+                // pero no acepta nuevos pagos.
+                if (trabajoActual.estado == "CANCELADO") {
+                    mostrarError(
+                        "No se pueden registrar pagos en un trabajo cancelado."
+                    )
+                    return@launch
+                }
 
                 val saldoActual =
                     (trabajoActual.importeCentavos - totalActual)

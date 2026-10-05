@@ -29,6 +29,10 @@ class ClienteRepositoryImpl(
         return clienteDao.obtenerPorId(id)
     }
 
+    override fun observarTodos(): Flow<List<ClienteEntity>> {
+        return clienteDao.observarTodos()
+    }
+
     override fun observarActivos(): Flow<List<ClienteEntity>> {
         return clienteDao.observarActivos()
     }
@@ -39,5 +43,9 @@ class ClienteRepositoryImpl(
 
     override suspend fun desactivar(id: Long) {
         clienteDao.desactivar(id)
+    }
+
+    override suspend fun activar(id: Long) {
+        clienteDao.activar(id)
     }
 }

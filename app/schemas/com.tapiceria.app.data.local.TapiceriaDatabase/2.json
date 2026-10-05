@@ -1,0 +1,550 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 2,
+    "identityHash": "8a228ede2b07d327af6010131a4eb4fa",
+    "entities": [
+      {
+        "tableName": "clientes",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `nombre` TEXT NOT NULL, `telefono` TEXT NOT NULL, `direccion` TEXT NOT NULL, `notas` TEXT NOT NULL, `fechaRegistro` INTEGER NOT NULL, `activo` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombre",
+            "columnName": "nombre",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "telefono",
+            "columnName": "telefono",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "direccion",
+            "columnName": "direccion",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "notas",
+            "columnName": "notas",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaRegistro",
+            "columnName": "fechaRegistro",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "activo",
+            "columnName": "activo",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "atenciones",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `clienteId` INTEGER, `tipo` TEXT NOT NULL, `descripcion` TEXT NOT NULL, `fechaAtencion` INTEGER NOT NULL, `notas` TEXT NOT NULL, FOREIGN KEY(`clienteId`) REFERENCES `clientes`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "clienteId",
+            "columnName": "clienteId",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "tipo",
+            "columnName": "tipo",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "descripcion",
+            "columnName": "descripcion",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaAtencion",
+            "columnName": "fechaAtencion",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "notas",
+            "columnName": "notas",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_atenciones_clienteId",
+            "unique": false,
+            "columnNames": [
+              "clienteId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_atenciones_clienteId` ON `${TABLE_NAME}` (`clienteId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "clientes",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "clienteId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "cotizaciones",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `atencionId` INTEGER NOT NULL, `folio` TEXT NOT NULL, `descripcion` TEXT NOT NULL, `importeCentavos` INTEGER NOT NULL, `fechaCreacion` INTEGER NOT NULL, `fechaVigencia` INTEGER, `estado` TEXT NOT NULL, FOREIGN KEY(`atencionId`) REFERENCES `atenciones`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "atencionId",
+            "columnName": "atencionId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "folio",
+            "columnName": "folio",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "descripcion",
+            "columnName": "descripcion",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "importeCentavos",
+            "columnName": "importeCentavos",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaCreacion",
+            "columnName": "fechaCreacion",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaVigencia",
+            "columnName": "fechaVigencia",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "estado",
+            "columnName": "estado",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_cotizaciones_atencionId",
+            "unique": false,
+            "columnNames": [
+              "atencionId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_cotizaciones_atencionId` ON `${TABLE_NAME}` (`atencionId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "atenciones",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "atencionId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "trabajos",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `clienteId` INTEGER NOT NULL, `cotizacionId` INTEGER, `folio` TEXT NOT NULL, `descripcion` TEXT NOT NULL, `importeCentavos` INTEGER NOT NULL, `fechaRecepcion` INTEGER NOT NULL, `fechaEntregaEstimada` INTEGER, `fechaEntregaReal` INTEGER, `estado` TEXT NOT NULL, `notas` TEXT NOT NULL, FOREIGN KEY(`clienteId`) REFERENCES `clientes`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT , FOREIGN KEY(`cotizacionId`) REFERENCES `cotizaciones`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "clienteId",
+            "columnName": "clienteId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cotizacionId",
+            "columnName": "cotizacionId",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "folio",
+            "columnName": "folio",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "descripcion",
+            "columnName": "descripcion",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "importeCentavos",
+            "columnName": "importeCentavos",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaRecepcion",
+            "columnName": "fechaRecepcion",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaEntregaEstimada",
+            "columnName": "fechaEntregaEstimada",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "fechaEntregaReal",
+            "columnName": "fechaEntregaReal",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "estado",
+            "columnName": "estado",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "notas",
+            "columnName": "notas",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_trabajos_clienteId",
+            "unique": false,
+            "columnNames": [
+              "clienteId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_trabajos_clienteId` ON `${TABLE_NAME}` (`clienteId`)"
+          },
+          {
+            "name": "index_trabajos_cotizacionId",
+            "unique": false,
+            "columnNames": [
+              "cotizacionId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_trabajos_cotizacionId` ON `${TABLE_NAME}` (`cotizacionId`)"
+          },
+          {
+            "name": "index_trabajos_fechaRecepcion",
+            "unique": false,
+            "columnNames": [
+              "fechaRecepcion"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_trabajos_fechaRecepcion` ON `${TABLE_NAME}` (`fechaRecepcion`)"
+          },
+          {
+            "name": "index_trabajos_estado",
+            "unique": false,
+            "columnNames": [
+              "estado"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_trabajos_estado` ON `${TABLE_NAME}` (`estado`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "clientes",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "clienteId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "cotizaciones",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "cotizacionId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "fotos_trabajo",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `trabajoId` INTEGER NOT NULL, `tipo` TEXT NOT NULL, `rutaArchivo` TEXT NOT NULL, `descripcion` TEXT NOT NULL, `fechaRegistro` INTEGER NOT NULL, `rotacionGrados` INTEGER NOT NULL, FOREIGN KEY(`trabajoId`) REFERENCES `trabajos`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "trabajoId",
+            "columnName": "trabajoId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "tipo",
+            "columnName": "tipo",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rutaArchivo",
+            "columnName": "rutaArchivo",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "descripcion",
+            "columnName": "descripcion",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaRegistro",
+            "columnName": "fechaRegistro",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rotacionGrados",
+            "columnName": "rotacionGrados",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_fotos_trabajo_trabajoId",
+            "unique": false,
+            "columnNames": [
+              "trabajoId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_fotos_trabajo_trabajoId` ON `${TABLE_NAME}` (`trabajoId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "trabajos",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "trabajoId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "pagos",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `trabajoId` INTEGER NOT NULL, `importeCentavos` INTEGER NOT NULL, `fechaPago` INTEGER NOT NULL, `metodo` TEXT NOT NULL, `referencia` TEXT NOT NULL, `notas` TEXT NOT NULL, FOREIGN KEY(`trabajoId`) REFERENCES `trabajos`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "trabajoId",
+            "columnName": "trabajoId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "importeCentavos",
+            "columnName": "importeCentavos",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "fechaPago",
+            "columnName": "fechaPago",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "metodo",
+            "columnName": "metodo",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "referencia",
+            "columnName": "referencia",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "notas",
+            "columnName": "notas",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_pagos_trabajoId",
+            "unique": false,
+            "columnNames": [
+              "trabajoId"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_pagos_trabajoId` ON `${TABLE_NAME}` (`trabajoId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "trabajos",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "trabajoId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "servicios",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `nombre` TEXT NOT NULL, `descripcion` TEXT NOT NULL, `activo` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nombre",
+            "columnName": "nombre",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "descripcion",
+            "columnName": "descripcion",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "activo",
+            "columnName": "activo",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '8a228ede2b07d327af6010131a4eb4fa')"
+    ]
+  }
+}

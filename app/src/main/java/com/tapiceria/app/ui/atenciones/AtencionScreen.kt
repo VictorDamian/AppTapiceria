@@ -1,10 +1,7 @@
-
 package com.tapiceria.app.ui.atenciones
 
 import androidx.compose.foundation.background
-import androidx.compose.material3.Surface
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,27 +12,21 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -46,7 +37,7 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * Pantalla para registrar y consultar atenciones de clientes.
+ * Pantalla para registrar, editar y consultar atenciones.
  */
 @Composable
 fun AtencionScreen(
@@ -54,180 +45,308 @@ fun AtencionScreen(
 ) {
     val estado by viewModel.uiState.collectAsState()
 
-    Column(
+    LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .verticalScroll(rememberScrollState())
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Conserva el contenido actual de la pantalla.
-        Text(
-            text = "Atenciones",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground
-        )
 
-        Text(
-            text = "Registra consultas y solicitudes de cotización.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        item {
 
-        // Muestra mensajes de validación o de resultado.
-        estado.error?.let { mensaje ->
             Text(
-                text = mensaje,
-                color = MaterialTheme.colorScheme.error
+                text = "Atenciones",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Text(
+                text = "Registra consultas y solicitudes de cotización.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
-        estado.mensaje?.let { mensaje ->
-            Text(
-                text = mensaje,
-                color = MaterialTheme.colorScheme.primary
-            )
-        }
+        item {
 
-        FormularioAtencion(
-            clientes = estado.clientes,
-            clienteSeleccionadoId = estado.clienteSeleccionadoId,
-            tipoSeleccionado = estado.tipoSeleccionado,
-            descripcion = estado.descripcion,
-            notas = estado.notas,
-            guardando = estado.guardando,
-            onSeleccionarCliente = viewModel::seleccionarCliente,
-            onSeleccionarTipo = viewModel::seleccionarTipo,
-            onDescripcionChange = viewModel::cambiarDescripcion,
-            onNotasChange = viewModel::cambiarNotas,
-            onGuardar = viewModel::guardarAtencion
-        )
+            estado.error?.let { mensaje ->
 
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = "Historial de atenciones",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground
-
-        )
-
-        when {
-            estado.cargando -> {
-                CircularProgressIndicator()
-            }
-
-            estado.atenciones.isEmpty() -> {
                 Text(
-                    text = "Todavía no hay atenciones registradas.",
-                    style = MaterialTheme.typography.bodyMedium
+                    text = mensaje,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
 
-            else -> {
-                // La lista muestra las atenciones más recientes primero.
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(350.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(
-                        items = estado.atenciones,
-                        key = { atencion -> atencion.id }
-                    ) { atencion ->
-                        AtencionItem(atencion = atencion)
+            estado.mensaje?.let { mensaje ->
+
+                Text(
+                    text = mensaje,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+
+        item {
+
+            FormularioAtencion(
+                clientes = estado.clientes,
+                clienteSeleccionadoId =
+                    estado.clienteSeleccionadoId,
+                textoBusquedaCliente =
+                    estado.textoBusquedaCliente,
+                tipoSeleccionado =
+                    estado.tipoSeleccionado,
+                descripcion =
+                    estado.descripcion,
+                notas =
+                    estado.notas,
+                atencionEditandoId =
+                    estado.atencionEditandoId,
+                guardando =
+                    estado.guardando,
+                onBusquedaClienteChange =
+                    viewModel::cambiarBusquedaCliente,
+                onSeleccionarCliente =
+                    viewModel::seleccionarCliente,
+                onSeleccionarSinCliente =
+                    viewModel::seleccionarSinCliente,
+                onSeleccionarTipo =
+                    viewModel::seleccionarTipo,
+                onDescripcionChange =
+                    viewModel::cambiarDescripcion,
+                onNotasChange =
+                    viewModel::cambiarNotas,
+                onGuardar =
+                    viewModel::guardarAtencion,
+                onCancelarEdicion =
+                    viewModel::cancelarEdicion
+            )
+        }
+
+        item {
+
+            Text(
+                text = "Historial de atenciones",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        if (estado.cargando) {
+
+            item {
+                CircularProgressIndicator()
+            }
+
+        } else if (estado.atenciones.isEmpty()) {
+
+            item {
+
+                Text(
+                    text = "Todavía no hay atenciones registradas.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+        } else {
+
+            items(
+                items = estado.atenciones,
+                key = { it.id }
+            ) { atencion ->
+
+                AtencionItem(
+                    atencion = atencion,
+                    onEditar = {
+                        viewModel.editarAtencion(atencion.id)
                     }
-                }
+                )
             }
         }
     }
 }
 
 /**
- * Formulario para capturar los datos de una atención.
+ * Formulario para crear o editar una atención.
  */
 @Composable
 private fun FormularioAtencion(
     clientes: List<ClienteEntity>,
     clienteSeleccionadoId: Long?,
+    textoBusquedaCliente: String,
     tipoSeleccionado: String,
     descripcion: String,
     notas: String,
+    atencionEditandoId: Long?,
     guardando: Boolean,
+    onBusquedaClienteChange: (String) -> Unit,
     onSeleccionarCliente: (Long) -> Unit,
+    onSeleccionarSinCliente: () -> Unit,
     onSeleccionarTipo: (String) -> Unit,
     onDescripcionChange: (String) -> Unit,
     onNotasChange: (String) -> Unit,
-    onGuardar: () -> Unit
+    onGuardar: () -> Unit,
+    onCancelarEdicion: () -> Unit
 ) {
-    var menuClientesAbierto by remember { mutableStateOf(false) }
 
-    val clienteSeleccionado = clientes.firstOrNull {
-        it.id == clienteSeleccionadoId
-    }
+    val clientesFiltrados = clientes
+        .filter { cliente ->
+
+            // En nuevas atenciones solamente se muestran
+            // clientes activos.
+            val disponible =
+                cliente.activo ||
+                        cliente.id == clienteSeleccionadoId
+
+            if (!disponible) {
+                return@filter false
+            }
+
+            val texto =
+                textoBusquedaCliente.trim()
+
+            texto.isBlank() ||
+                    cliente.nombre.contains(
+                        texto,
+                        ignoreCase = true
+                    ) ||
+                    cliente.telefono.contains(
+                        texto,
+                        ignoreCase = true
+                    )
+        }
+        .take(10)
+
+    val clienteSeleccionado =
+        clientes.firstOrNull {
+            it.id == clienteSeleccionadoId
+        }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor =
+                MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(
             defaultElevation = 2.dp
         )
     ) {
-        // Conserva el Column y todos los campos actuales del formulario.
+
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+
             Text(
-                text = "Nueva atención",
-                style = MaterialTheme.typography.titleMedium
+                text =
+                    if (atencionEditandoId == null) {
+                        "Nueva atención"
+                    } else {
+                        "Editar atención"
+                    },
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
             )
 
-            // Selector de cliente activo.
-            Box(modifier = Modifier.fillMaxWidth()) {
-                OutlinedButton(
-                    onClick = { menuClientesAbierto = true },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = clientes.isNotEmpty() && !guardando
-                ) {
-                    Text(
-                        text = clienteSeleccionado?.nombre
-                            ?: "Seleccionar cliente"
-                    )
-                }
+            /**
+             * Cliente seleccionado actualmente.
+             */
+            OutlinedButton(
+                onClick = {},
+                modifier = Modifier.fillMaxWidth(),
+                enabled = false
+            ) {
 
-                DropdownMenu(
-                    expanded = menuClientesAbierto,
-                    onDismissRequest = {
-                        menuClientesAbierto = false
-                    },
-                    modifier = Modifier.fillMaxWidth(0.85f)
-                ) {
-                    clientes.forEach { cliente ->
-                        DropdownMenuItem(
-                            text = { Text(cliente.nombre) },
-                            onClick = {
-                                onSeleccionarCliente(cliente.id)
-                                menuClientesAbierto = false
-                            }
-                        )
-                    }
-                }
+                Text(
+                    text =
+                        clienteSeleccionado?.nombre
+                            ?: "Pendiente / No aplica"
+                )
             }
 
-            if (clientes.isEmpty()) {
-                Text(
-                    text = "Primero registra un cliente activo.",
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall
-                )
+            /**
+             * Campo de búsqueda.
+             */
+            OutlinedTextField(
+                value = textoBusquedaCliente,
+                onValueChange =
+                    onBusquedaClienteChange,
+                modifier = Modifier.fillMaxWidth(),
+                label = {
+                    Text("Buscar cliente")
+                },
+                placeholder = {
+                    Text("Nombre o teléfono")
+                },
+                singleLine = true,
+                enabled = !guardando
+            )
+
+            /**
+             * Opción para dejar la atención sin cliente.
+             */
+            OutlinedButton(
+                onClick = onSeleccionarSinCliente,
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !guardando
+            ) {
+                Text("Pendiente / No aplica")
+            }
+
+            /**
+             * Resultados de búsqueda.
+             */
+            clientesFiltrados.forEach { cliente ->
+
+                OutlinedButton(
+                    onClick = {
+                        onSeleccionarCliente(cliente.id)
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !guardando && cliente.activo
+                ) {
+
+                    Column(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+
+                        Text(
+                            text = cliente.nombre,
+                            fontWeight = FontWeight.Medium
+                        )
+
+                        if (cliente.telefono.isNotBlank()) {
+
+                            Text(
+                                text = cliente.telefono,
+                                style =
+                                    MaterialTheme.typography.bodySmall,
+                                color =
+                                    MaterialTheme.colorScheme
+                                        .onSurfaceVariant
+                            )
+                        }
+
+                        if (!cliente.activo) {
+
+                            Text(
+                                text = "Cliente inactivo",
+                                style =
+                                    MaterialTheme.typography.bodySmall,
+                                color =
+                                    MaterialTheme.colorScheme.error
+                            )
+                        }
+                    }
+                }
             }
 
             Text(
@@ -237,13 +356,18 @@ private fun FormularioAtencion(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement =
+                    Arrangement.spacedBy(8.dp)
             ) {
+
                 OutlinedButton(
-                    onClick = { onSeleccionarTipo("CONSULTA") },
+                    onClick = {
+                        onSeleccionarTipo("CONSULTA")
+                    },
                     enabled = !guardando,
                     modifier = Modifier.weight(1f)
                 ) {
+
                     Text(
                         if (tipoSeleccionado == "CONSULTA") {
                             "✓ Consulta"
@@ -254,10 +378,13 @@ private fun FormularioAtencion(
                 }
 
                 OutlinedButton(
-                    onClick = { onSeleccionarTipo("COTIZACION") },
+                    onClick = {
+                        onSeleccionarTipo("COTIZACION")
+                    },
                     enabled = !guardando,
                     modifier = Modifier.weight(1f)
                 ) {
+
                     Text(
                         if (tipoSeleccionado == "COTIZACION") {
                             "✓ Cotización"
@@ -272,9 +399,13 @@ private fun FormularioAtencion(
                 value = descripcion,
                 onValueChange = onDescripcionChange,
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Descripción") },
+                label = {
+                    Text("Descripción")
+                },
                 placeholder = {
-                    Text("Ej. Reparación de sillón de tres plazas")
+                    Text(
+                        "Ej. Reparación de sillón de tres plazas"
+                    )
                 },
                 minLines = 2,
                 maxLines = 4,
@@ -285,9 +416,8 @@ private fun FormularioAtencion(
                 value = notas,
                 onValueChange = onNotasChange,
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Notas (opcional)") },
-                placeholder = {
-                    Text("Detalles adicionales del cliente")
+                label = {
+                    Text("Notas (opcional)")
                 },
                 minLines = 2,
                 maxLines = 4,
@@ -297,19 +427,47 @@ private fun FormularioAtencion(
             Button(
                 onClick = onGuardar,
                 modifier = Modifier.fillMaxWidth(),
-                enabled = !guardando && clientes.isNotEmpty()
+                enabled = !guardando
             ) {
+
                 if (guardando) {
+
                     CircularProgressIndicator(
                         modifier = Modifier
                             .width(20.dp)
                             .height(20.dp),
                         strokeWidth = 2.dp
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Spacer(
+                        modifier = Modifier.width(8.dp)
+                    )
+
                     Text("Guardando...")
+
                 } else {
-                    Text("Registrar atención")
+
+                    Text(
+                        if (atencionEditandoId == null) {
+                            "Registrar atención"
+                        } else {
+                            "Guardar cambios"
+                        }
+                    )
+                }
+            }
+
+            /**
+             * El botón solamente aparece durante una edición.
+             */
+            if (atencionEditandoId != null) {
+
+                TextButton(
+                    onClick = onCancelarEdicion,
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !guardando
+                ) {
+                    Text("Cancelar edición")
                 }
             }
         }
@@ -321,79 +479,113 @@ private fun FormularioAtencion(
  */
 @Composable
 private fun AtencionItem(
-    atencion: AtencionListado
+    atencion: AtencionListado,
+    onEditar: () -> Unit
 ) {
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor =
+                MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(
             defaultElevation = 1.dp
         )
     ) {
+
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement =
+                Arrangement.spacedBy(8.dp)
         ) {
-            Text(
-                text = atencion.nombreCliente,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
 
-            // El tipo se muestra como una etiqueta visual.
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement =
+                    Arrangement.SpaceBetween
+            ) {
+
+                Text(
+                    text = atencion.nombreCliente,
+                    style =
+                        MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+
+                TextButton(
+                    onClick = onEditar
+                ) {
+                    Text("Editar")
+                }
+            }
+
             Surface(
                 shape = RoundedCornerShape(8.dp),
-                color = MaterialTheme.colorScheme.primaryContainer
+                color =
+                    MaterialTheme.colorScheme.primaryContainer
             ) {
+
                 Text(
-                    text = if (atencion.tipo == "COTIZACION") {
-                        "Solicitud de cotización"
-                    } else {
-                        "Consulta"
-                    },
+                    text =
+                        if (atencion.tipo == "COTIZACION") {
+                            "Solicitud de cotización"
+                        } else {
+                            "Consulta"
+                        },
                     modifier = Modifier.padding(
                         horizontal = 10.dp,
                         vertical = 5.dp
                     ),
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    style = MaterialTheme.typography.labelMedium
+                    color =
+                        MaterialTheme.colorScheme
+                            .onPrimaryContainer,
+                    style =
+                        MaterialTheme.typography.labelMedium
                 )
             }
 
             Text(
                 text = atencion.descripcion,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface
+                style = MaterialTheme.typography.bodyLarge
             )
 
             if (atencion.notas.isNotBlank()) {
+
                 Text(
                     text = "Notas: ${atencion.notas}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    style =
+                        MaterialTheme.typography.bodyMedium,
+                    color =
+                        MaterialTheme.colorScheme
+                            .onSurfaceVariant
                 )
             }
 
-            HorizontalDivider(
-                color = MaterialTheme.colorScheme.outlineVariant
-            )
+            HorizontalDivider()
 
             Text(
-                text = "Fecha: ${formatearFecha(atencion.fechaAtencion)}",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                text =
+                    "Fecha: ${formatearFecha(atencion.fechaAtencion)}",
+                style =
+                    MaterialTheme.typography.labelMedium,
+                color =
+                    MaterialTheme.colorScheme
+                        .onSurfaceVariant
             )
         }
     }
 }
 
 /**
- * Convierte la fecha almacenada en milisegundos a un formato legible.
+ * Convierte la fecha almacenada en milisegundos
+ * a un formato legible.
  */
-private fun formatearFecha(fecha: Long): String {
+private fun formatearFecha(
+    fecha: Long
+): String {
+
     val formato = SimpleDateFormat(
         "dd/MM/yyyy HH:mm",
         Locale.getDefault()

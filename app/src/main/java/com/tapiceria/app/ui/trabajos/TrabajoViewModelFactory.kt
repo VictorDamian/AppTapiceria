@@ -1,28 +1,35 @@
-
 package com.tapiceria.app.ui.trabajos
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.tapiceria.app.domain.repository.ClienteRepository
+import com.tapiceria.app.domain.repository.PagoRepository
 import com.tapiceria.app.domain.repository.TrabajoRepository
 
 /**
- * Inyecta los repositorios requeridos por TrabajoViewModel.
+ * Inyecta los repositorios necesarios para trabajos.
  */
 class TrabajoViewModelFactory(
     private val trabajoRepository: TrabajoRepository,
-    private val clienteRepository: ClienteRepository
+    private val clienteRepository: ClienteRepository,
+    private val pagoRepository: PagoRepository
 ) : ViewModelProvider.Factory {
 
     @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        require(modelClass.isAssignableFrom(TrabajoViewModel::class.java)) {
+    override fun <T : ViewModel> create(
+        modelClass: Class<T>
+    ): T {
+
+        require(
+            modelClass.isAssignableFrom(TrabajoViewModel::class.java)
+        ) {
             "ViewModel no soportado: ${modelClass.name}"
         }
 
         return TrabajoViewModel(
             trabajoRepository = trabajoRepository,
-            clienteRepository = clienteRepository
+            clienteRepository = clienteRepository,
+            pagoRepository = pagoRepository
         ) as T
     }
 }

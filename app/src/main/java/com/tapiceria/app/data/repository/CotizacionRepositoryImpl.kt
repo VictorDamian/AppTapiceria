@@ -51,4 +51,10 @@ class CotizacionRepositoryImpl(
     override suspend fun marcarVencidas(ahora: Long): Int {
         return cotizacionDao.marcarVencidas(ahora)
     }
+
+    override suspend fun obtenerPorAtencion(
+        atencionId: Long
+    ): CotizacionEntity? {
+        return cotizacionDao.obtenerPorAtencion(atencionId)
+    }
 }

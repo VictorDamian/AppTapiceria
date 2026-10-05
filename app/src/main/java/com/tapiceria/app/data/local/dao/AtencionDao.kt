@@ -4,6 +4,7 @@ package com.tapiceria.app.data.local.dao
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Update
 import com.tapiceria.app.data.local.entity.AtencionEntity
 import com.tapiceria.app.domain.model.AtencionListado
 import kotlinx.coroutines.flow.Flow
@@ -18,6 +19,9 @@ interface AtencionDao {
     @Insert
     suspend fun insertar(atencion: AtencionEntity): Long
 
+    @Update
+    suspend fun actualizar(atencion: AtencionEntity)
+
     /** Consulta una atención por su identificador. */
     @Query("SELECT * FROM atenciones WHERE id = :id LIMIT 1")
     suspend fun obtenerPorId(id: Long): AtencionEntity?
@@ -25,50 +29,42 @@ interface AtencionDao {
     /**
      * Lista las atenciones con el nombre del cliente.
      * El nombre se obtiene mediante JOIN, sin duplicar información.
+     * LEFT JOIN es necesario porque clienteId puede ser NULL.
      */
     @Query("""
         SELECT
             a.id AS id,
             a.clienteId AS clienteId,
-            c.nombre AS nombreCliente,
+            COALESCE(c.nombre, 'Pendiente') AS nombreCliente,
             a.tipo AS tipo,
             a.descripcion AS descripcion,
             a.fechaAtencion AS fechaAtencion,
             a.notas AS notas
         FROM atenciones a
-        INNER JOIN clientes c ON c.id = a.clienteId
+        LEFT JOIN clientes c ON c.id = a.clienteId
         ORDER BY a.fechaAtencion DESC
     """)
     fun observarTodas(): Flow<List<AtencionListado>>
 
-    /** Permite filtrar por tipo de atención. */
+    /** Permite filtrar por tipo de atención.
+     * Filtra las atenciones por tipo.
+     *      *
+     *      * También utiliza LEFT JOIN para conservar las atenciones
+     *      * que no tienen cliente.
+     *      */
     @Query("""
         SELECT
             a.id AS id,
             a.clienteId AS clienteId,
-            c.nombre AS nombreCliente,
+            COALESCE(c.nombre, 'Pendiente') AS nombreCliente,
             a.tipo AS tipo,
             a.descripcion AS descripcion,
             a.fechaAtencion AS fechaAtencion,
             a.notas AS notas
         FROM atenciones a
-        INNER JOIN clientes c ON c.id = a.clienteId
+        LEFT JOIN clientes c ON c.id = a.clienteId
         WHERE a.tipo = :tipo
         ORDER BY a.fechaAtencion DESC
     """)
     fun observarPorTipo(tipo: String): Flow<List<AtencionListado>>
 }
-
-/**
- * Proyección para mostrar la atención junto con el nombre del cliente.
- * No es una tabla: Room la construye a partir de la consulta SQL.
- */
-data class AtencionListadoDto(
-    val id: Long,
-    val clienteId: Long,
-    val nombreCliente: String,
-    val tipo: String,
-    val descripcion: String,
-    val fechaAtencion: Long,
-    val notas: String
-)

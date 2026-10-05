@@ -2,6 +2,7 @@ package com.tapiceria.app.di
 
 import android.content.Context
 import androidx.room.Room
+import com.tapiceria.app.data.local.DatabaseMigrations
 import com.tapiceria.app.data.local.TapiceriaDatabase
 import com.tapiceria.app.data.repository.AtencionRepositoryImpl
 import com.tapiceria.app.data.repository.ClienteRepositoryImpl
@@ -31,7 +32,11 @@ class AppContainer(context: Context) {
             context.applicationContext,
             TapiceriaDatabase::class.java,
             "tapiceria_database"
-        ).build()
+        )
+            .addMigrations(
+                DatabaseMigrations.MIGRATION_1_2
+            )
+            .build()
 
     // Repositorios que consumirán los ViewModels.
     val clienteRepository: ClienteRepository =

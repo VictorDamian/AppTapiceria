@@ -25,7 +25,10 @@ data class AtencionEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
 
-    val clienteId: Long,
+    /**
+     * NULL = atención sin cliente identificado.
+     */
+    val clienteId: Long? = null,
 
     // Valores previstos: CONSULTA y COTIZACION.
     val tipo: String,

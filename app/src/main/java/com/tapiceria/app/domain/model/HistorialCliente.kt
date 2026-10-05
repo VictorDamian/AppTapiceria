@@ -47,10 +47,20 @@ data class HistorialCliente(
      * cuando los pagos superan el importe registrado del trabajo.
      */
     fun saldoTrabajoCentavos(trabajoId: Long): Long {
-        val trabajo = trabajos.firstOrNull { it.id == trabajoId }
-            ?: return 0L
+        val trabajo = trabajos.firstOrNull {
+            it.id == trabajoId
+        } ?: return 0L
 
-        val totalPagado = totalPagadoTrabajoCentavos(trabajoId)
+        /*
+         * Los pagos históricos siguen existiendo,
+         * pero un trabajo cancelado ya no genera saldo.
+         */
+        if (trabajo.estado == "CANCELADO") {
+            return 0L
+        }
+
+        val totalPagado =
+            totalPagadoTrabajoCentavos(trabajoId)
 
         return (trabajo.importeCentavos - totalPagado)
             .coerceAtLeast(0L)

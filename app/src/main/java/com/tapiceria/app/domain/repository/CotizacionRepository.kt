@@ -27,4 +27,8 @@ interface CotizacionRepository {
     fun observarTodas(): Flow<List<CotizacionListado>>
 
     suspend fun marcarVencidas(ahora: Long): Int
+
+    suspend fun obtenerPorAtencion(
+        atencionId: Long
+    ): CotizacionEntity?
 }

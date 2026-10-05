@@ -74,4 +74,21 @@ interface CotizacionDao {
           AND fechaVigencia < :ahora
     """)
     suspend fun marcarVencidas(ahora: Long): Int
+
+    /**
+     * Obtiene una cotización existente para una atención.
+     *
+     * La regla de negocio permite solamente una cotización
+     * por atención.
+     */
+    @Query("""
+        SELECT *
+        FROM cotizaciones
+        WHERE atencionId = :atencionId
+        ORDER BY fechaCreacion DESC
+        LIMIT 1
+    """)
+    suspend fun obtenerPorAtencion(
+        atencionId: Long
+    ): CotizacionEntity?
 }

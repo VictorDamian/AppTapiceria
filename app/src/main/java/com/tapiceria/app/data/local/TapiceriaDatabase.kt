@@ -37,7 +37,7 @@ import com.tapiceria.app.data.local.dao.TrabajoDao
         PagoEntity::class,
         ServicioEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = true
 )
 abstract class TapiceriaDatabase : RoomDatabase() {

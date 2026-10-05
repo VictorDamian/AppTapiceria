@@ -17,6 +17,10 @@ class AtencionRepositoryImpl(
     override suspend fun insertar(atencion: AtencionEntity): Long =
         dao.insertar(atencion)
 
+    override suspend fun actualizar(atencion: AtencionEntity) {
+        dao.actualizar(atencion)
+    }
+
     override suspend fun obtenerPorId(id: Long): AtencionEntity? =
         dao.obtenerPorId(id)
 

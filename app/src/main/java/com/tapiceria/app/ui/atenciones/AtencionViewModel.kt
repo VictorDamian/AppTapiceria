@@ -36,7 +36,7 @@ class AtencionViewModel(
     private fun observarAtenciones() {
         viewModelScope.launch {
             atencionRepository.observarTodas()
-                .catch { error ->
+                .catch {
                     _uiState.update {
                         it.copy(
                             cargando = false,
@@ -56,11 +56,15 @@ class AtencionViewModel(
     }
 
     /**
-     * Carga los clientes activos disponibles para el formulario.
+     * Observa todos los clientes.
+     *
+     * Se utilizan todos y no solamente los activos porque una
+     * atención histórica puede estar asociada a un cliente
+     * que posteriormente fue desactivado.
      */
     private fun observarClientes() {
         viewModelScope.launch {
-            clienteRepository.observarActivos()
+            clienteRepository.observarTodos()
                 .catch {
                     _uiState.update { estado ->
                         estado.copy(
@@ -69,39 +73,79 @@ class AtencionViewModel(
                     }
                 }
                 .collect { clientes ->
-                    _uiState.update { estado ->
-                        val clienteActual = estado.clienteSeleccionadoId
-
-                        // Conserva la selección si el cliente sigue activo.
-                        val seleccionValida = clientes.any {
-                            it.id == clienteActual
-                        }
-
-                        estado.copy(
-                            clientes = clientes,
-                            clienteSeleccionadoId = if (seleccionValida) {
-                                clienteActual
-                            } else {
-                                clientes.firstOrNull()?.id
-                            }
-                        )
+                    _uiState.update {
+                        it.copy(clientes = clientes)
                     }
                 }
         }
     }
 
-    fun seleccionarCliente(clienteId: Long) {
+    /**
+     * Cambia el texto de búsqueda de clientes.
+     */
+    fun cambiarBusquedaCliente(texto: String) {
         _uiState.update {
             it.copy(
-                clienteSeleccionadoId = clienteId,
+                textoBusquedaCliente = texto,
                 error = null,
                 mensaje = null
             )
         }
     }
 
+    /**
+     * Selecciona un cliente.
+     *
+     * Solamente se utiliza para clientes activos.
+     */
+    fun seleccionarCliente(clienteId: Long) {
+        val cliente = _uiState.value.clientes
+            .firstOrNull { it.id == clienteId }
+
+        if (cliente == null) {
+            mostrarError("El cliente seleccionado no existe.")
+            return
+        }
+
+        if (!cliente.activo) {
+            mostrarError(
+                "El cliente está inactivo. Activa el cliente para seleccionarlo."
+            )
+            return
+        }
+
+        _uiState.update {
+            it.copy(
+                clienteSeleccionadoId = clienteId,
+                textoBusquedaCliente = "",
+                error = null,
+                mensaje = null
+            )
+        }
+    }
+
+    /**
+     * Permite dejar explícitamente la atención sin cliente.
+     */
+    fun seleccionarSinCliente() {
+        _uiState.update {
+            it.copy(
+                clienteSeleccionadoId = null,
+                textoBusquedaCliente = "",
+                error = null,
+                mensaje = null
+            )
+        }
+    }
+
+    /**
+     * Cambia el tipo de atención.
+     */
     fun seleccionarTipo(tipo: String) {
-        if (tipo != "CONSULTA" && tipo != "COTIZACION") return
+
+        if (tipo != "CONSULTA" && tipo != "COTIZACION") {
+            return
+        }
 
         _uiState.update {
             it.copy(
@@ -125,7 +169,73 @@ class AtencionViewModel(
     }
 
     /**
+     * Carga una atención existente en el formulario.
+     */
+    fun editarAtencion(id: Long) {
+
+        if (_uiState.value.guardando) {
+            return
+        }
+
+        viewModelScope.launch {
+
+            try {
+
+                val atencion =
+                    atencionRepository.obtenerPorId(id)
+
+                if (atencion == null) {
+                    mostrarError(
+                        "No se encontró la atención seleccionada."
+                    )
+                    return@launch
+                }
+
+                _uiState.update {
+                    it.copy(
+                        atencionEditandoId = atencion.id,
+                        clienteSeleccionadoId = atencion.clienteId,
+                        textoBusquedaCliente = "",
+                        tipoSeleccionado = atencion.tipo,
+                        descripcion = atencion.descripcion,
+                        notas = atencion.notas,
+                        error = null,
+                        mensaje = null
+                    )
+                }
+
+            } catch (ex: Exception) {
+
+                mostrarError(
+                    "No fue posible cargar la atención."
+                )
+            }
+        }
+    }
+
+    /**
+     * Cancela la edición y devuelve el formulario al modo
+     * de nueva atención.
+     */
+    fun cancelarEdicion() {
+
+        _uiState.update {
+            it.copy(
+                atencionEditandoId = null,
+                clienteSeleccionadoId = null,
+                textoBusquedaCliente = "",
+                tipoSeleccionado = "CONSULTA",
+                descripcion = "",
+                notas = "",
+                error = null,
+                mensaje = null
+            )
+        }
+    }
+
+    /**
      * Valida el formulario y registra una nueva atención.
+     * Inserta una atención nueva o actualiza una existente.
      */
     fun guardarAtencion() {
         val estado = _uiState.value
@@ -133,15 +243,8 @@ class AtencionViewModel(
         // Evita guardar registros incompletos o duplicar clics.
         if (estado.guardando) return
 
-        val clienteId = estado.clienteSeleccionadoId
-        if (clienteId == null ||
-            estado.clientes.none { it.id == clienteId }
-        ) {
-            mostrarError("Selecciona un cliente activo.")
-            return
-        }
-
         val descripcion = estado.descripcion.trim()
+
         if (descripcion.isBlank()) {
             mostrarError("La descripción es obligatoria.")
             return
@@ -152,7 +255,39 @@ class AtencionViewModel(
             return
         }
 
+        // Si existe cliente, debe seguir existiendo.
+        val clienteSeleccionado =
+            estado.clienteSeleccionadoId?.let { id ->
+                estado.clientes.firstOrNull {
+                    it.id == id
+                }
+            }
+
+        if (
+            estado.clienteSeleccionadoId != null &&
+            clienteSeleccionado == null
+        ) {
+            mostrarError(
+                "El cliente seleccionado ya no existe."
+            )
+            return
+        }
+
+        // Una nueva atención solamente puede seleccionar
+        // clientes activos.
+        if (
+            estado.atencionEditandoId == null &&
+            clienteSeleccionado != null &&
+            !clienteSeleccionado.activo
+        ) {
+            mostrarError(
+                "No puedes registrar una nueva atención para un cliente inactivo."
+            )
+            return
+        }
+
         viewModelScope.launch {
+
             _uiState.update {
                 it.copy(
                     guardando = true,
@@ -162,24 +297,49 @@ class AtencionViewModel(
             }
 
             try {
+
                 val atencion = AtencionEntity(
-                    clienteId = clienteId,
+                    id = estado.atencionEditandoId ?: 0L,
+                    clienteId = estado.clienteSeleccionadoId,
                     tipo = estado.tipoSeleccionado,
                     descripcion = descripcion,
                     notas = estado.notas.trim()
                 )
 
-                atencionRepository.insertar(atencion)
+                if (estado.atencionEditandoId == null) {
 
-                _uiState.update {
-                    it.copy(
-                        descripcion = "",
-                        notas = "",
-                        guardando = false,
-                        mensaje = "Atención registrada correctamente."
-                    )
+                    atencionRepository.insertar(atencion)
+
+                    _uiState.update {
+                        it.copy(
+                            clienteSeleccionadoId = null,
+                            textoBusquedaCliente = "",
+                            descripcion = "",
+                            notas = "",
+                            guardando = false,
+                            mensaje = "Atención registrada correctamente."
+                        )
+                    }
+
+                } else {
+
+                    atencionRepository.actualizar(atencion)
+
+                    _uiState.update {
+                        it.copy(
+                            atencionEditandoId = null,
+                            clienteSeleccionadoId = null,
+                            textoBusquedaCliente = "",
+                            descripcion = "",
+                            notas = "",
+                            guardando = false,
+                            mensaje = "Atención actualizada correctamente."
+                        )
+                    }
                 }
+
             } catch (ex: Exception) {
+
                 _uiState.update {
                     it.copy(
                         guardando = false,

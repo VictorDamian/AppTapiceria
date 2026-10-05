@@ -18,6 +18,7 @@ import java.math.RoundingMode
 import java.text.ParsePosition
 import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Date
 import java.util.Locale
 
 /**
@@ -147,20 +148,41 @@ class CotizacionViewModel(
         if (estado.guardando) return
 
         val atencionId = estado.atencionSeleccionadaId
-        if (atencionId == null ||
-            estado.atenciones.none { it.id == atencionId }
-        ) {
-            mostrarError("Primero registra una atención de tipo Cotización.")
+
+        if (atencionId == null) {
+            mostrarError("Selecciona una solicitud.")
+            return
+        }
+
+        val atencion = estado.atenciones.firstOrNull {
+            it.id == atencionId
+        }
+
+        if (atencion == null) {
+            mostrarError("La atención seleccionada ya no existe.")
+            return
+        }
+
+        /*
+         * Una cotización requiere cliente porque posteriormente
+         * puede convertirse en un trabajo.
+         */
+        if (atencion.clienteId == null) {
+            mostrarError(
+                "La atención debe tener un cliente antes de generar una cotización."
+            )
             return
         }
 
         val descripcion = estado.descripcion.trim()
+
         if (descripcion.isBlank()) {
             mostrarError("La descripción de la cotización es obligatoria.")
             return
         }
 
         val importeDecimal = estado.importe.toBigDecimalOrNull()
+
         if (importeDecimal == null || importeDecimal <= BigDecimal.ZERO) {
             mostrarError("Ingresa un importe mayor que cero.")
             return
@@ -182,17 +204,19 @@ class CotizacionViewModel(
             convertirFechaFinDia(estado.fechaVigencia)
                 ?: run {
                     mostrarError(
-                        "La vigencia debe usar el formato AAAA-MM-DD, " +
-                                "por ejemplo 2026-12-31."
+                        "La fecha de vigencia no es válida."
                     )
                     return
                 }
         }
 
-        if (fechaVigencia != null &&
+        if (
+            fechaVigencia != null &&
             fechaVigencia < System.currentTimeMillis()
         ) {
-            mostrarError("La fecha de vigencia debe ser hoy o posterior.")
+            mostrarError(
+                "La fecha de vigencia debe ser hoy o posterior."
+            )
             return
         }
 
@@ -206,28 +230,83 @@ class CotizacionViewModel(
             }
 
             try {
-                // El folio se genera automáticamente para evitar capturas
-                // manuales repetidas. Más adelante podremos personalizarlo.
-                val folio = "COT-${System.currentTimeMillis()}"
+                /*
+                 * Si estamos editando, se obtiene la cotización existente
+                 * para conservar folio y fecha de creación.
+                 */
+                val existente =
+                    estado.cotizacionEditandoId?.let {
+                        cotizacionRepository.obtenerPorId(it)
+                    }
+
+                /*
+                 * Para una cotización nueva se verifica que la atención
+                 * todavía no tenga una cotización.
+                 */
+                if (existente == null) {
+                    val cotizacionExistente =
+                        cotizacionRepository.obtenerPorAtencion(atencionId)
+
+                    if (cotizacionExistente != null) {
+                        mostrarError(
+                            "Esta atención ya tiene una cotización registrada."
+                        )
+                        return@launch
+                    }
+                }
 
                 val cotizacion = CotizacionEntity(
+                    id = existente?.id ?: 0L,
+
                     atencionId = atencionId,
-                    folio = folio,
+
+                    // Se conserva el folio al editar.
+                    folio = existente?.folio
+                        ?: "COT-${System.currentTimeMillis()}",
+
                     descripcion = descripcion,
+
                     importeCentavos = importeCentavos,
-                    fechaVigencia = fechaVigencia
+
+                    // También se conserva la fecha original.
+                    fechaCreacion =
+                        existente?.fechaCreacion
+                            ?: System.currentTimeMillis(),
+
+                    fechaVigencia = fechaVigencia,
+
+                    // Al editar se conserva el estado.
+                    estado = existente?.estado ?: "PENDIENTE"
                 )
 
-                cotizacionRepository.insertar(cotizacion)
+                if (existente == null) {
+                    cotizacionRepository.insertar(cotizacion)
 
-                _uiState.update {
-                    it.copy(
-                        descripcion = "",
-                        importe = "",
-                        fechaVigencia = "",
-                        guardando = false,
-                        mensaje = "Cotización registrada: $folio"
-                    )
+                    _uiState.update {
+                        it.copy(
+                            guardando = false,
+                            cotizacionEditandoId = null,
+                            descripcion = "",
+                            importe = "",
+                            fechaVigencia = "",
+                            mensaje =
+                                "Cotización registrada: ${cotizacion.folio}"
+                        )
+                    }
+                } else {
+                    cotizacionRepository.actualizar(cotizacion)
+
+                    _uiState.update {
+                        it.copy(
+                            guardando = false,
+                            cotizacionEditandoId = null,
+                            descripcion = "",
+                            importe = "",
+                            fechaVigencia = "",
+                            mensaje =
+                                "Cotización ${cotizacion.folio} actualizada."
+                        )
+                    }
                 }
             } catch (_: Exception) {
                 _uiState.update {
@@ -237,6 +316,66 @@ class CotizacionViewModel(
                     )
                 }
             }
+        }
+    }
+
+    fun cambiarBusquedaAtencion(valor: String) {
+        _uiState.update {
+            it.copy(textoBusquedaAtencion = valor)
+        }
+    }
+
+    fun editarCotizacion(id: Long) {
+        viewModelScope.launch {
+            try {
+                val cotizacion =
+                    cotizacionRepository.obtenerPorId(id)
+                        ?: run {
+                            mostrarError("No se encontró la cotización.")
+                            return@launch
+                        }
+
+                val fecha =
+                    cotizacion.fechaVigencia?.let {
+                        SimpleDateFormat(
+                            "yyyy-MM-dd",
+                            Locale.ROOT
+                        ).format(Date(it))
+                    }.orEmpty()
+
+                _uiState.update {
+                    it.copy(
+                        cotizacionEditandoId = cotizacion.id,
+                        atencionSeleccionadaId = cotizacion.atencionId,
+                        descripcion = cotizacion.descripcion,
+                        importe =
+                            BigDecimal(cotizacion.importeCentavos)
+                                .movePointLeft(2)
+                                .toPlainString(),
+                        fechaVigencia = fecha,
+                        textoBusquedaAtencion = "",
+                        error = null,
+                        mensaje = null
+                    )
+                }
+            } catch (_: Exception) {
+                mostrarError("No fue posible cargar la cotización.")
+            }
+        }
+    }
+
+    fun cancelarEdicion() {
+        _uiState.update {
+            it.copy(
+                cotizacionEditandoId = null,
+                atencionSeleccionadaId = null,
+                textoBusquedaAtencion = "",
+                descripcion = "",
+                importe = "",
+                fechaVigencia = "",
+                error = null,
+                mensaje = null
+            )
         }
     }
 

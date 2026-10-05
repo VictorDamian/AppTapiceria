@@ -25,7 +25,23 @@ data class PagoUiState(
     /**
      * Calcula el saldo sin permitir resultados negativos.
      */
+    /**
+     * Calcula el saldo pendiente.
+     *
+     * Un trabajo cancelado no genera saldo pendiente,
+     * aunque conserve pagos históricos.
+     */
     val saldoPendienteCentavos: Long
-        get() = (importeTrabajoCentavos - totalPagadoCentavos)
-            .coerceAtLeast(0L)
+        get() {
+            val trabajo = trabajos.firstOrNull {
+                it.id == trabajoSeleccionadoId
+            }
+
+            if (trabajo?.estado == "CANCELADO") {
+                return 0L
+            }
+
+            return (importeTrabajoCentavos - totalPagadoCentavos)
+                .coerceAtLeast(0L)
+        }
 }

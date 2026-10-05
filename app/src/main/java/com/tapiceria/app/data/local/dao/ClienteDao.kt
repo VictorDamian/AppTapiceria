@@ -30,6 +30,20 @@ interface ClienteDao {
     /**
      * Emite nuevamente la lista cuando Room detecta cambios
      * en la tabla clientes.
+     * Obtiene todos los clientes, activos e inactivos.
+     *
+     * Esto permite administrar nuevamente un cliente desactivado.
+    */
+    @Query("""
+    SELECT *
+    FROM clientes
+    ORDER BY activo DESC, nombre COLLATE NOCASE ASC
+    """)
+    fun observarTodos(): Flow<List<ClienteEntity>>
+
+    /**
+     * Mantiene disponible la consulta original para otras pantallas
+     * que solamente necesiten clientes activos.
      */
     @Query("""
         SELECT * FROM clientes
@@ -38,19 +52,22 @@ interface ClienteDao {
     """)
     fun observarActivos(): Flow<List<ClienteEntity>>
 
-    /** Busca por nombre o teléfono, ignorando clientes inactivos. */
+    /**
+     * Busca clientes activos e inactivos.
+     */
     @Query("""
-        SELECT * FROM clientes
-        WHERE activo = 1
-          AND (
-              nombre LIKE '%' || :texto || '%'
-              OR telefono LIKE '%' || :texto || '%'
-          )
-        ORDER BY nombre COLLATE NOCASE ASC
+        SELECT *
+        FROM clientes
+        WHERE nombre LIKE '%' || :texto || '%'
+           OR telefono LIKE '%' || :texto || '%'
+        ORDER BY activo DESC, nombre COLLATE NOCASE ASC
     """)
     fun buscar(texto: String): Flow<List<ClienteEntity>>
 
     /** Conserva el historial y oculta al cliente de las listas activas. */
     @Query("UPDATE clientes SET activo = 0 WHERE id = :id")
     suspend fun desactivar(id: Long)
+
+    @Query("UPDATE clientes SET activo = 1 WHERE id = :id")
+    suspend fun activar(id: Long)
 }

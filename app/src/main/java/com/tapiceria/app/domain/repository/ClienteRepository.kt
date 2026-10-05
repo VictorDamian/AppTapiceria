@@ -20,7 +20,14 @@ interface ClienteRepository {
     /** Consulta un cliente por su identificador. */
     suspend fun obtenerPorId(id: Long): ClienteEntity?
 
-    /** Observa los clientes activos y detecta cambios automáticamente. */
+    /**
+     * Obtiene clientes activos e inactivos.
+     */
+    fun observarTodos(): Flow<List<ClienteEntity>>
+
+    /**
+     * Obtiene únicamente clientes activos.
+     */
     fun observarActivos(): Flow<List<ClienteEntity>>
 
     /** Busca clientes activos por nombre o teléfono. */
@@ -28,4 +35,6 @@ interface ClienteRepository {
 
     /** Desactiva un cliente sin eliminar su historial. */
     suspend fun desactivar(id: Long)
+
+    suspend fun activar(id: Long)
 }
