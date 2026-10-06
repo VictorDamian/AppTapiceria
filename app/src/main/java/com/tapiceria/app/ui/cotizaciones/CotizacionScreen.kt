@@ -1,8 +1,7 @@
-
 package com.tapiceria.app.ui.cotizaciones
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,235 +12,403 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.tapiceria.app.domain.model.AtencionListado
 import com.tapiceria.app.domain.model.CotizacionListado
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import androidx.compose.foundation.background
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Surface
-import androidx.compose.ui.text.font.FontWeight
 
 /**
- * Pantalla para registrar y administrar cotizaciones.
+ * Pantalla de administración de cotizaciones.
  */
 @Composable
 fun CotizacionScreen(
     viewModel: CotizacionViewModel
 ) {
+
     val estado by viewModel.uiState.collectAsState()
 
-    Column(
+    LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .verticalScroll(rememberScrollState())
+            .background(
+                MaterialTheme.colorScheme.background
+            )
             .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement =
+            Arrangement.spacedBy(16.dp)
     ) {
-        // Conserva el contenido actual de CotizacionScreen.
-        Text(
-            text = "Cotizaciones",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground
-        )
 
-        estado.error?.let {
+        item {
+
             Text(
-                text = it,
-                color = MaterialTheme.colorScheme.error
+                text = "Cotizaciones",
+                style =
+                    MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold
             )
         }
 
-        estado.mensaje?.let {
-            Text(
-                text = it,
-                color = MaterialTheme.colorScheme.primary
-            )
-        }
+        item {
 
-        FormularioCotizacion(
-            atenciones = estado.atenciones,
-            atencionSeleccionadaId = estado.atencionSeleccionadaId,
-            descripcion = estado.descripcion,
-            importe = estado.importe,
-            fechaVigencia = estado.fechaVigencia,
-            guardando = estado.guardando,
-            onSeleccionarAtencion = viewModel::seleccionarAtencion,
-            onDescripcionChange = viewModel::cambiarDescripcion,
-            onImporteChange = viewModel::cambiarImporte,
-            onFechaVigenciaChange = viewModel::cambiarFechaVigencia,
-            onGuardar = viewModel::guardarCotizacion
-        )
+            estado.error?.let { mensaje ->
 
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Text(
-            text = "Historial",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground
-        )
-
-        when {
-            estado.cargando -> CircularProgressIndicator()
-
-            estado.cotizaciones.isEmpty() -> {
-                Text("Todavía no hay cotizaciones registradas.")
+                Text(
+                    text = mensaje,
+                    color =
+                        MaterialTheme.colorScheme.error
+                )
             }
 
-            else -> {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(420.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(
-                        items = estado.cotizaciones,
-                        key = { it.id }
-                    ) { cotizacion ->
-                        CotizacionItem(
-                            cotizacion = cotizacion,
-                            onAceptar = {
-                                viewModel.cambiarEstado(
-                                    cotizacion.id,
-                                    "ACEPTADA"
-                                )
-                            },
-                            onRechazar = {
-                                viewModel.cambiarEstado(
-                                    cotizacion.id,
-                                    "RECHAZADA"
-                                )
-                            }
+            estado.mensaje?.let { mensaje ->
+
+                Text(
+                    text = mensaje,
+                    color =
+                        MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+
+        item {
+
+            FormularioCotizacion(
+                atenciones = estado.atenciones,
+                textoBusqueda =
+                    estado.textoBusquedaAtencion,
+                atencionSeleccionadaId =
+                    estado.atencionSeleccionadaId,
+                descripcion =
+                    estado.descripcion,
+                importe =
+                    estado.importe,
+                fechaVigencia =
+                    estado.fechaVigencia,
+                cotizacionEditandoId =
+                    estado.cotizacionEditandoId,
+                guardando =
+                    estado.guardando,
+                onBusquedaChange =
+                    viewModel::cambiarBusquedaAtencion,
+                onSeleccionarAtencion =
+                    viewModel::seleccionarAtencion,
+                onDescripcionChange =
+                    viewModel::cambiarDescripcion,
+                onImporteChange =
+                    viewModel::cambiarImporte,
+                onFechaVigenciaChange =
+                    viewModel::cambiarFechaVigencia,
+                onGuardar =
+                    viewModel::guardarCotizacion,
+                onCancelarEdicion =
+                    viewModel::cancelarEdicion
+            )
+        }
+
+        item {
+
+            Text(
+                text = "Historial",
+                style =
+                    MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        if (estado.cargando) {
+
+            item {
+                CircularProgressIndicator()
+            }
+
+        } else if (estado.cotizaciones.isEmpty()) {
+
+            item {
+
+                Text(
+                    text =
+                        "Todavía no hay cotizaciones registradas.",
+                    color =
+                        MaterialTheme.colorScheme
+                            .onSurfaceVariant
+                )
+            }
+
+        } else {
+
+            items(
+                items = estado.cotizaciones,
+                key = { it.id }
+            ) { cotizacion ->
+
+                CotizacionItem(
+                    cotizacion = cotizacion,
+                    onEditar = {
+                        viewModel.editarCotizacion(
+                            cotizacion.id
+                        )
+                    },
+                    onAceptar = {
+                        viewModel.cambiarEstado(
+                            cotizacion.id,
+                            "ACEPTADA"
+                        )
+                    },
+                    onRechazar = {
+                        viewModel.cambiarEstado(
+                            cotizacion.id,
+                            "RECHAZADA"
                         )
                     }
-                }
+                )
             }
         }
     }
 }
 
 /**
- * Formulario de alta de una cotización.
+ * Formulario de creación y edición.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun FormularioCotizacion(
     atenciones: List<AtencionListado>,
+    textoBusqueda: String,
     atencionSeleccionadaId: Long?,
     descripcion: String,
     importe: String,
     fechaVigencia: String,
+    cotizacionEditandoId: Long?,
     guardando: Boolean,
+    onBusquedaChange: (String) -> Unit,
     onSeleccionarAtencion: (Long) -> Unit,
     onDescripcionChange: (String) -> Unit,
     onImporteChange: (String) -> Unit,
     onFechaVigenciaChange: (String) -> Unit,
-    onGuardar: () -> Unit
+    onGuardar: () -> Unit,
+    onCancelarEdicion: () -> Unit
 ) {
-    var menuAbierto by remember { mutableStateOf(false) }
 
-    val atencionSeleccionada = atenciones.firstOrNull {
-        it.id == atencionSeleccionadaId
+    var mostrarCalendario by remember {
+        mutableStateOf(false)
     }
+
+    /**
+     * Una atención sin cliente no puede generar cotización,
+     * por lo tanto no se muestra como opción.
+     */
+    val atencionesDisponibles =
+        atenciones.filter {
+            it.clienteId != null
+        }
+
+    val atencionesFiltradas =
+        atencionesDisponibles
+            .filter { atencion ->
+
+                val texto =
+                    textoBusqueda.trim()
+
+                texto.isBlank() ||
+                        atencion.nombreCliente.contains(
+                            texto,
+                            ignoreCase = true
+                        ) ||
+                        atencion.descripcion.contains(
+                            texto,
+                            ignoreCase = true
+                        )
+            }
+            .take(10)
+
+    val atencionSeleccionada =
+        atenciones.firstOrNull {
+            it.id == atencionSeleccionadaId
+        }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor =
+                MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(
             defaultElevation = 2.dp
         )
     ) {
-        // Conserva todos los campos y el botón de registro actuales.
+
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement =
+                Arrangement.spacedBy(12.dp)
         ) {
+
             Text(
-                text = "Nueva cotización",
-                style = MaterialTheme.typography.titleMedium
+                text =
+                    if (cotizacionEditandoId == null) {
+                        "Nueva cotización"
+                    } else {
+                        "Editar cotización"
+                    },
+                style =
+                    MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
             )
 
-            Box(modifier = Modifier.fillMaxWidth()) {
-                OutlinedButton(
-                    onClick = { menuAbierto = true },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = atenciones.isNotEmpty() && !guardando
-                ) {
-                    Text(
-                        text = atencionSeleccionada?.let {
-                            "${it.nombreCliente} - ${it.descripcion}"
-                        } ?: "Seleccionar solicitud"
-                    )
-                }
+            /**
+             * Buscador de solicitudes.
+             */
+            OutlinedTextField(
+                value = textoBusqueda,
+                onValueChange =
+                    onBusquedaChange,
+                modifier = Modifier.fillMaxWidth(),
+                label = {
+                    Text("Buscar solicitud")
+                },
+                placeholder = {
+                    Text("Cliente o descripción")
+                },
+                singleLine = true,
+                enabled = !guardando
+            )
 
-                DropdownMenu(
-                    expanded = menuAbierto,
-                    onDismissRequest = { menuAbierto = false },
-                    modifier = Modifier.fillMaxWidth(0.9f)
+            /**
+             * Atención seleccionada.
+             */
+            if (atencionSeleccionada != null) {
+
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    color =
+                        MaterialTheme.colorScheme
+                            .primaryContainer
                 ) {
-                    atenciones.forEach { atencion ->
-                        DropdownMenuItem(
-                            text = {
-                                Column {
-                                    Text(atencion.nombreCliente)
-                                    Text(
-                                        text = atencion.descripcion,
-                                        style = MaterialTheme.typography.bodySmall
-                                    )
-                                }
-                            },
-                            onClick = {
-                                onSeleccionarAtencion(atencion.id)
-                                menuAbierto = false
-                            }
+
+                    Column(
+                        modifier = Modifier.padding(12.dp)
+                    ) {
+
+                        Text(
+                            text =
+                                "Solicitud seleccionada",
+                            style =
+                                MaterialTheme.typography
+                                    .labelMedium
+                        )
+
+                        Text(
+                            text =
+                                atencionSeleccionada
+                                    .nombreCliente,
+                            fontWeight =
+                                FontWeight.Bold
+                        )
+
+                        Text(
+                            text =
+                                atencionSeleccionada
+                                    .descripcion,
+                            style =
+                                MaterialTheme.typography
+                                    .bodySmall
                         )
                     }
                 }
             }
 
-            if (atenciones.isEmpty()) {
+            /**
+             * Resultados de búsqueda.
+             */
+            atencionesFiltradas.forEach { atencion ->
+
+                OutlinedButton(
+                    onClick = {
+                        onSeleccionarAtencion(
+                            atencion.id
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !guardando
+                ) {
+
+                    Column(
+                        modifier =
+                            Modifier.fillMaxWidth()
+                    ) {
+
+                        Text(
+                            text =
+                                atencion.nombreCliente,
+                            fontWeight =
+                                FontWeight.Medium
+                        )
+
+                        Text(
+                            text =
+                                atencion.descripcion,
+                            style =
+                                MaterialTheme.typography
+                                    .bodySmall
+                        )
+                    }
+                }
+            }
+
+            if (
+                atencionesDisponibles.isEmpty()
+            ) {
+
                 Text(
-                    text = "Primero registra una atención de tipo Cotización.",
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.bodySmall
+                    text =
+                        "No hay solicitudes de cotización " +
+                                "con cliente asignado.",
+                    color =
+                        MaterialTheme.colorScheme.error,
+                    style =
+                        MaterialTheme.typography.bodySmall
                 )
             }
 
             OutlinedTextField(
                 value = descripcion,
-                onValueChange = onDescripcionChange,
+                onValueChange =
+                    onDescripcionChange,
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Concepto de la cotización") },
+                label = {
+                    Text("Concepto de la cotización")
+                },
                 placeholder = {
-                    Text("Ej. Retapizado con tela tipo lino")
+                    Text(
+                        "Ej. Retapizado con tela tipo lino"
+                    )
                 },
                 minLines = 2,
                 maxLines = 4,
@@ -250,155 +417,347 @@ private fun FormularioCotizacion(
 
             OutlinedTextField(
                 value = importe,
-                onValueChange = onImporteChange,
+                onValueChange =
+                    onImporteChange,
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("Importe (MXN)") },
-                placeholder = { Text("Ej. 1250.50") },
-                singleLine = true,
-                enabled = !guardando
-            )
-
-            OutlinedTextField(
-                value = fechaVigencia,
-                onValueChange = onFechaVigenciaChange,
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text("Fecha de vigencia (opcional)") },
-                placeholder = { Text("AAAA-MM-DD") },
-                supportingText = {
-                    Text("Ejemplo: 2026-12-31. La fecha incluye todo el día.")
+                label = {
+                    Text("Importe (MXN)")
+                },
+                placeholder = {
+                    Text("Ej. 1250.50")
                 },
                 singleLine = true,
                 enabled = !guardando
             )
 
+            /**
+             * Selector de fecha.
+             *
+             * Ya no obligamos al usuario a escribir
+             * manualmente AAAA-MM-DD.
+             */
+            OutlinedButton(
+                onClick = {
+                    mostrarCalendario = true
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !guardando
+            ) {
+
+                Text(
+                    text =
+                        if (fechaVigencia.isBlank()) {
+                            "Seleccionar fecha de vigencia"
+                        } else {
+                            "Vigencia: $fechaVigencia"
+                        }
+                )
+            }
+
+            if (fechaVigencia.isNotBlank()) {
+
+                TextButton(
+                    onClick = {
+                        onFechaVigenciaChange("")
+                    },
+                    enabled = !guardando,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Quitar fecha de vigencia")
+                }
+            }
+
             Button(
                 onClick = onGuardar,
                 modifier = Modifier.fillMaxWidth(),
-                enabled = !guardando && atenciones.isNotEmpty()
+                enabled =
+                    !guardando &&
+                            atencionSeleccionadaId != null
             ) {
+
                 if (guardando) {
+
                     CircularProgressIndicator(
                         modifier = Modifier
                             .width(20.dp)
                             .height(20.dp),
                         strokeWidth = 2.dp
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Spacer(
+                        modifier =
+                            Modifier.width(8.dp)
+                    )
+
                     Text("Guardando...")
+
                 } else {
-                    Text("Registrar cotización")
+
+                    Text(
+                        if (
+                            cotizacionEditandoId == null
+                        ) {
+                            "Registrar cotización"
+                        } else {
+                            "Guardar cambios"
+                        }
+                    )
                 }
             }
+
+            if (
+                cotizacionEditandoId != null
+            ) {
+
+                TextButton(
+                    onClick =
+                        onCancelarEdicion,
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    enabled = !guardando
+                ) {
+                    Text("Cancelar edición")
+                }
+            }
+        }
+    }
+
+    /**
+     * Diálogo de selección de fecha.
+     */
+    if (mostrarCalendario) {
+
+        val fechaInicial =
+            convertirTextoAFecha(fechaVigencia)
+
+        val datePickerState =
+            rememberDatePickerState(
+                initialSelectedDateMillis =
+                    fechaInicial
+            )
+
+        DatePickerDialog(
+            onDismissRequest = {
+                mostrarCalendario = false
+            },
+            confirmButton = {
+
+                TextButton(
+                    onClick = {
+
+                        val millis =
+                            datePickerState
+                                .selectedDateMillis
+
+                        if (millis != null) {
+
+                            onFechaVigenciaChange(
+                                convertirFechaATexto(
+                                    millis
+                                )
+                            )
+                        }
+
+                        mostrarCalendario = false
+                    }
+                ) {
+                    Text("Aceptar")
+                }
+            },
+            dismissButton = {
+
+                TextButton(
+                    onClick = {
+                        mostrarCalendario = false
+                    }
+                ) {
+                    Text("Cancelar")
+                }
+            }
+        ) {
+
+            DatePicker(
+                state = datePickerState
+            )
         }
     }
 }
 
 /**
- * Tarjeta de una cotización registrada.
- */
-/**
- * Tarjeta visual de una cotización.
- * Conserva los importes, fechas, estados y acciones existentes.
+ * Tarjeta de una cotización.
  */
 @Composable
 private fun CotizacionItem(
     cotizacion: CotizacionListado,
+    onEditar: () -> Unit,
     onAceptar: () -> Unit,
     onRechazar: () -> Unit
 ) {
-    val importeFormateado = remember(cotizacion.importeCentavos) {
-        val importe = cotizacion.importeCentavos / 100.0
-        String.format(Locale("es", "MX"), "$%,.2f", importe)
-    }
 
-    val colorEstado = when (cotizacion.estado) {
-        "ACEPTADA" -> MaterialTheme.colorScheme.primary
-        "RECHAZADA", "VENCIDA" -> MaterialTheme.colorScheme.error
-        else -> MaterialTheme.colorScheme.secondary
-    }
+    val importe =
+        cotizacion.importeCentavos / 100.0
+
+    val importeFormateado =
+        String.format(
+            Locale("es", "MX"),
+            "$%,.2f",
+            importe
+        )
+
+    val colorEstado =
+        when (cotizacion.estado) {
+
+            "ACEPTADA" ->
+                MaterialTheme.colorScheme.primary
+
+            "RECHAZADA",
+            "VENCIDA" ->
+                MaterialTheme.colorScheme.error
+
+            else ->
+                MaterialTheme.colorScheme.secondary
+        }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor =
+                MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(
             defaultElevation = 2.dp
         )
     ) {
+
         Column(
             modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement =
+                Arrangement.spacedBy(8.dp)
         ) {
-            Text(
-                text = cotizacion.folio,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.primary
-            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement =
+                    Arrangement.SpaceBetween
+            ) {
+
+                Text(
+                    text = cotizacion.folio,
+                    style =
+                        MaterialTheme.typography
+                            .titleMedium,
+                    color =
+                        MaterialTheme.colorScheme
+                            .primary,
+                    fontWeight = FontWeight.Bold
+                )
+
+                /**
+                 * Solo se permite editar una cotización
+                 * mientras permanezca pendiente.
+                 */
+                if (
+                    cotizacion.estado == "PENDIENTE"
+                ) {
+
+                    TextButton(
+                        onClick = onEditar
+                    ) {
+                        Text("Editar")
+                    }
+                }
+            }
 
             Text(
                 text = cotizacion.nombreCliente,
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onSurface
+                style =
+                    MaterialTheme.typography.titleLarge
             )
 
             Text(
-                text = cotizacion.descripcionCotizacion,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface
+                text =
+                    cotizacion.descripcionCotizacion,
+                style =
+                    MaterialTheme.typography.bodyLarge
             )
 
             Text(
-                text = "Solicitud: ${cotizacion.descripcionAtencion}",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                text =
+                    "Solicitud: " +
+                            cotizacion.descripcionAtencion,
+                style =
+                    MaterialTheme.typography.bodyMedium,
+                color =
+                    MaterialTheme.colorScheme
+                        .onSurfaceVariant
             )
 
-            // Destacamos el importe sin modificar su cálculo.
             Surface(
+                modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.secondaryContainer
+                color =
+                    MaterialTheme.colorScheme
+                        .secondaryContainer
             ) {
+
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(2.dp)
+                    modifier = Modifier.padding(12.dp)
                 ) {
+
                     Text(
                         text = "Importe",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                        style =
+                            MaterialTheme.typography
+                                .labelMedium
                     )
 
                     Text(
-                        text = "$importeFormateado MXN",
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                        text =
+                            "$importeFormateado MXN",
+                        style =
+                            MaterialTheme.typography
+                                .titleLarge,
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }
 
             Text(
-                text = "Creada: ${formatearFecha(cotizacion.fechaCreacion)}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                text =
+                    "Creada: " +
+                            formatearFecha(
+                                cotizacion.fechaCreacion
+                            ),
+                style =
+                    MaterialTheme.typography.bodySmall,
+                color =
+                    MaterialTheme.colorScheme
+                        .onSurfaceVariant
             )
 
             cotizacion.fechaVigencia?.let { fecha ->
+
                 Text(
-                    text = "Vigencia: ${formatearFecha(fecha)}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text =
+                        "Vigencia: " +
+                                formatearFecha(fecha),
+                    style =
+                        MaterialTheme.typography.bodySmall,
+                    color =
+                        MaterialTheme.colorScheme
+                            .onSurfaceVariant
                 )
             }
 
-            // Etiqueta de estado con el color correspondiente.
             Surface(
                 shape = RoundedCornerShape(8.dp),
-                color = colorEstado.copy(alpha = 0.12f)
+                color =
+                    colorEstado.copy(
+                        alpha = 0.12f
+                    )
             ) {
+
                 Text(
                     text = cotizacion.estado,
                     modifier = Modifier.padding(
@@ -406,30 +765,41 @@ private fun CotizacionItem(
                         vertical = 6.dp
                     ),
                     color = colorEstado,
-                    style = MaterialTheme.typography.labelLarge
+                    style =
+                        MaterialTheme.typography
+                            .labelLarge
                 )
             }
 
-            // Las acciones solo aparecen para cotizaciones pendientes.
-            if (cotizacion.estado == "PENDIENTE") {
-                HorizontalDivider(
-                    color = MaterialTheme.colorScheme.outlineVariant
-                )
+            /**
+             * Las acciones de aceptar/rechazar solamente
+             * aparecen cuando sigue pendiente.
+             */
+            if (
+                cotizacion.estado == "PENDIENTE"
+            ) {
+
+                HorizontalDivider()
 
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    horizontalArrangement =
+                        Arrangement.spacedBy(8.dp)
                 ) {
+
                     Button(
                         onClick = onAceptar,
-                        modifier = Modifier.weight(1f)
+                        modifier =
+                            Modifier.weight(1f)
                     ) {
                         Text("Aceptar")
                     }
 
                     OutlinedButton(
                         onClick = onRechazar,
-                        modifier = Modifier.weight(1f)
+                        modifier =
+                            Modifier.weight(1f)
                     ) {
                         Text("Rechazar")
                     }
@@ -440,9 +810,50 @@ private fun CotizacionItem(
 }
 
 /**
- * Formatea una fecha almacenada como milisegundos Unix.
+ * Convierte un texto yyyy-MM-dd a milisegundos.
  */
-private fun formatearFecha(fecha: Long): String {
+private fun convertirTextoAFecha(
+    valor: String
+): Long? {
+
+    if (valor.isBlank()) {
+        return null
+    }
+
+    return try {
+
+        SimpleDateFormat(
+            "yyyy-MM-dd",
+            Locale.ROOT
+        ).apply {
+            isLenient = false
+        }.parse(valor)?.time
+
+    } catch (_: Exception) {
+        null
+    }
+}
+
+/**
+ * Convierte milisegundos a yyyy-MM-dd.
+ */
+private fun convertirFechaATexto(
+    fecha: Long
+): String {
+
+    return SimpleDateFormat(
+        "yyyy-MM-dd",
+        Locale.ROOT
+    ).format(Date(fecha))
+}
+
+/**
+ * Formatea una fecha para mostrarla al usuario.
+ */
+private fun formatearFecha(
+    fecha: Long
+): String {
+
     return SimpleDateFormat(
         "dd/MM/yyyy",
         Locale.getDefault()

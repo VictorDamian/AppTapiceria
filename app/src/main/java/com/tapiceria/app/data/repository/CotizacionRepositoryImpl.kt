@@ -1,4 +1,3 @@
-
 package com.tapiceria.app.data.repository
 
 import com.tapiceria.app.data.local.dao.CotizacionDao
@@ -8,7 +7,7 @@ import com.tapiceria.app.domain.repository.CotizacionRepository
 import kotlinx.coroutines.flow.Flow
 
 /**
- * Implementación del repositorio utilizando Room.
+ * Implementación del repositorio de cotizaciones.
  */
 class CotizacionRepositoryImpl(
     private val cotizacionDao: CotizacionDao
@@ -32,6 +31,12 @@ class CotizacionRepositoryImpl(
         return cotizacionDao.obtenerPorId(id)
     }
 
+    override suspend fun obtenerPorAtencion(
+        atencionId: Long
+    ): CotizacionEntity? {
+        return cotizacionDao.obtenerPorAtencion(atencionId)
+    }
+
     override fun observarPorAtencion(
         atencionId: Long
     ): Flow<List<CotizacionEntity>> {
@@ -48,13 +53,9 @@ class CotizacionRepositoryImpl(
         return cotizacionDao.observarTodas()
     }
 
-    override suspend fun marcarVencidas(ahora: Long): Int {
+    override suspend fun marcarVencidas(
+        ahora: Long
+    ): Int {
         return cotizacionDao.marcarVencidas(ahora)
-    }
-
-    override suspend fun obtenerPorAtencion(
-        atencionId: Long
-    ): CotizacionEntity? {
-        return cotizacionDao.obtenerPorAtencion(atencionId)
     }
 }

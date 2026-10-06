@@ -1,4 +1,3 @@
-
 package com.tapiceria.app.domain.repository
 
 import com.tapiceria.app.data.local.entity.CotizacionEntity
@@ -10,11 +9,24 @@ import kotlinx.coroutines.flow.Flow
  */
 interface CotizacionRepository {
 
-    suspend fun insertar(cotizacion: CotizacionEntity): Long
+    suspend fun insertar(
+        cotizacion: CotizacionEntity
+    ): Long
 
-    suspend fun actualizar(cotizacion: CotizacionEntity)
+    suspend fun actualizar(
+        cotizacion: CotizacionEntity
+    )
 
-    suspend fun obtenerPorId(id: Long): CotizacionEntity?
+    suspend fun obtenerPorId(
+        id: Long
+    ): CotizacionEntity?
+
+    /**
+     * Obtiene la cotización asociada a una atención.
+     */
+    suspend fun obtenerPorAtencion(
+        atencionId: Long
+    ): CotizacionEntity?
 
     fun observarPorAtencion(
         atencionId: Long
@@ -26,9 +38,7 @@ interface CotizacionRepository {
 
     fun observarTodas(): Flow<List<CotizacionListado>>
 
-    suspend fun marcarVencidas(ahora: Long): Int
-
-    suspend fun obtenerPorAtencion(
-        atencionId: Long
-    ): CotizacionEntity?
+    suspend fun marcarVencidas(
+        ahora: Long
+    ): Int
 }

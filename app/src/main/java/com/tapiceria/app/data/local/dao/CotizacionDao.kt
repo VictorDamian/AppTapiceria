@@ -1,4 +1,3 @@
-
 package com.tapiceria.app.data.local.dao
 
 import androidx.room.Dao
@@ -9,18 +8,60 @@ import com.tapiceria.app.data.local.entity.CotizacionEntity
 import com.tapiceria.app.domain.model.CotizacionListado
 import kotlinx.coroutines.flow.Flow
 
+/**
+ * Acceso a datos de cotizaciones.
+ */
 @Dao
 interface CotizacionDao {
 
+    /**
+     * Inserta una cotización.
+     */
     @Insert
-    suspend fun insertar(cotizacion: CotizacionEntity): Long
+    suspend fun insertar(
+        cotizacion: CotizacionEntity
+    ): Long
 
+    /**
+     * Actualiza una cotización existente.
+     */
     @Update
-    suspend fun actualizar(cotizacion: CotizacionEntity)
+    suspend fun actualizar(
+        cotizacion: CotizacionEntity
+    )
 
-    @Query("SELECT * FROM cotizaciones WHERE id = :id LIMIT 1")
-    suspend fun obtenerPorId(id: Long): CotizacionEntity?
+    /**
+     * Obtiene una cotización por ID.
+     */
+    @Query("""
+        SELECT *
+        FROM cotizaciones
+        WHERE id = :id
+        LIMIT 1
+    """)
+    suspend fun obtenerPorId(
+        id: Long
+    ): CotizacionEntity?
 
+    /**
+     * Obtiene la cotización asociada a una atención.
+     *
+     * Como la regla de negocio indica que solamente puede existir
+     * una cotización por atención, esta consulta devuelve una sola.
+     */
+    @Query("""
+        SELECT *
+        FROM cotizaciones
+        WHERE atencionId = :atencionId
+        LIMIT 1
+    """)
+    suspend fun obtenerPorAtencion(
+        atencionId: Long
+    ): CotizacionEntity?
+
+    /**
+     * Obtiene las cotizaciones de una atención.
+     */
     @Query("""
         SELECT *
         FROM cotizaciones
@@ -31,6 +72,9 @@ interface CotizacionDao {
         atencionId: Long
     ): Flow<List<CotizacionEntity>>
 
+    /**
+     * Obtiene cotizaciones por estado.
+     */
     @Query("""
         SELECT *
         FROM cotizaciones
@@ -42,7 +86,8 @@ interface CotizacionDao {
     ): Flow<List<CotizacionEntity>>
 
     /**
-     * Obtiene las cotizaciones con los datos necesarios para la pantalla.
+     * Obtiene las cotizaciones con la información necesaria
+     * para mostrar el listado.
      */
     @Query("""
         SELECT
@@ -57,14 +102,17 @@ interface CotizacionDao {
             co.fechaVigencia AS fechaVigencia,
             co.estado AS estado
         FROM cotizaciones co
-        INNER JOIN atenciones a ON a.id = co.atencionId
-        INNER JOIN clientes cl ON cl.id = a.clienteId
+        INNER JOIN atenciones a
+            ON a.id = co.atencionId
+        INNER JOIN clientes cl
+            ON cl.id = a.clienteId
         ORDER BY co.fechaCreacion DESC
     """)
     fun observarTodas(): Flow<List<CotizacionListado>>
 
     /**
-     * Marca como vencidas las cotizaciones pendientes cuya vigencia terminó.
+     * Marca como vencidas las cotizaciones pendientes
+     * cuya fecha de vigencia ya terminó.
      */
     @Query("""
         UPDATE cotizaciones
@@ -73,22 +121,7 @@ interface CotizacionDao {
           AND fechaVigencia IS NOT NULL
           AND fechaVigencia < :ahora
     """)
-    suspend fun marcarVencidas(ahora: Long): Int
-
-    /**
-     * Obtiene una cotización existente para una atención.
-     *
-     * La regla de negocio permite solamente una cotización
-     * por atención.
-     */
-    @Query("""
-        SELECT *
-        FROM cotizaciones
-        WHERE atencionId = :atencionId
-        ORDER BY fechaCreacion DESC
-        LIMIT 1
-    """)
-    suspend fun obtenerPorAtencion(
-        atencionId: Long
-    ): CotizacionEntity?
+    suspend fun marcarVencidas(
+        ahora: Long
+    ): Int
 }

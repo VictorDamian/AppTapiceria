@@ -1,4 +1,3 @@
-
 package com.tapiceria.app.ui.cotizaciones
 
 import androidx.lifecycle.ViewModel
@@ -15,16 +14,23 @@ class CotizacionViewModelFactory(
 ) : ViewModelProvider.Factory {
 
     @Suppress("UNCHECKED_CAST")
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+    override fun <T : ViewModel> create(
+        modelClass: Class<T>
+    ): T {
+
         require(
-            modelClass.isAssignableFrom(CotizacionViewModel::class.java)
+            modelClass.isAssignableFrom(
+                CotizacionViewModel::class.java
+            )
         ) {
             "ViewModel no soportado: ${modelClass.name}"
         }
 
         return CotizacionViewModel(
-            cotizacionRepository = cotizacionRepository,
-            atencionRepository = atencionRepository
+            cotizacionRepository =
+                cotizacionRepository,
+            atencionRepository =
+                atencionRepository
         ) as T
     }
 }
