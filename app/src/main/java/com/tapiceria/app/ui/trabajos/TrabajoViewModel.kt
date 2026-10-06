@@ -1,4 +1,3 @@
-
 package com.tapiceria.app.ui.trabajos
 
 import androidx.lifecycle.ViewModel
@@ -21,7 +20,7 @@ import java.util.Calendar
 import java.util.Locale
 
 /**
- * Gestiona el registro y seguimiento de los trabajos.
+ * Gestiona el registro, edición y seguimiento de los trabajos.
  */
 class TrabajoViewModel(
     private val trabajoRepository: TrabajoRepository,
@@ -32,6 +31,9 @@ class TrabajoViewModel(
     private val _uiState = MutableStateFlow(TrabajoUiState())
     val uiState: StateFlow<TrabajoUiState> = _uiState.asStateFlow()
 
+    /**
+     * Estados válidos del flujo de trabajo.
+     */
     private val estadosPermitidos = setOf(
         "PENDIENTE",
         "EN_PROCESO",
@@ -46,6 +48,9 @@ class TrabajoViewModel(
         observarCotizaciones()
     }
 
+    /**
+     * Observa todos los trabajos.
+     */
     private fun observarTrabajos() {
         viewModelScope.launch {
             trabajoRepository.observarTodos()
@@ -59,27 +64,38 @@ class TrabajoViewModel(
                 }
                 .collect { trabajos ->
                     _uiState.update {
-                        it.copy(trabajos = trabajos, cargando = false)
+                        it.copy(
+                            trabajos = trabajos,
+                            cargando = false
+                        )
                     }
                 }
         }
     }
 
+    /**
+     * Observa únicamente clientes activos.
+     */
     private fun observarClientes() {
         viewModelScope.launch {
-            clienteRepository.observarTodos()
+            clienteRepository.observarActivos()
                 .catch {
                     mostrarError("No fue posible cargar los clientes.")
                 }
                 .collect { clientes ->
+
                     _uiState.update { estado ->
-                        val actual = estado.clienteSeleccionadoId
-                        val existe = clientes.any { it.id == actual }
+
+                        val clienteActual = estado.clienteSeleccionadoId
+
+                        val existe = clientes.any {
+                            it.id == clienteActual
+                        }
 
                         estado.copy(
                             clientes = clientes,
                             clienteSeleccionadoId = if (existe) {
-                                actual
+                                clienteActual
                             } else {
                                 clientes.firstOrNull()?.id
                             }
@@ -89,84 +105,174 @@ class TrabajoViewModel(
         }
     }
 
+    /**
+     * Observa cotizaciones aceptadas.
+     */
     private fun observarCotizaciones() {
         viewModelScope.launch {
             trabajoRepository.observarCotizacionesAceptadas()
                 .catch {
-                    mostrarError("No fue posible cargar las cotizaciones.")
+                    mostrarError(
+                        "No fue posible cargar las cotizaciones."
+                    )
                 }
                 .collect { cotizaciones ->
+
                     _uiState.update { estado ->
-                        val idActual = estado.cotizacionSeleccionadaId
-                        val seleccionValida = cotizaciones.any {
-                            it.id == idActual &&
-                                    it.clienteId == estado.clienteSeleccionadoId
+
+                        val cotizacionActual =
+                            estado.cotizacionSeleccionadaId
+
+                        val existe = cotizaciones.any {
+                            it.id == cotizacionActual &&
+                                    it.clienteId ==
+                                    estado.clienteSeleccionadoId
                         }
 
                         estado.copy(
                             cotizaciones = cotizaciones,
-                            cotizacionSeleccionadaId = if (seleccionValida) {
-                                idActual
-                            } else {
-                                null
-                            }
+                            cotizacionSeleccionadaId =
+                                if (existe) {
+                                    cotizacionActual
+                                } else {
+                                    null
+                                }
                         )
                     }
                 }
         }
     }
 
+    /**
+     * Cambia el texto de búsqueda de clientes.
+     */
+    fun cambiarBusquedaCliente(valor: String) {
+        _uiState.update {
+            it.copy(
+                textoBusquedaCliente = valor,
+                error = null,
+                mensaje = null
+            )
+        }
+    }
+
+    /**
+     * Cambia el texto de búsqueda de cotizaciones.
+     */
+    fun cambiarBusquedaCotizacion(valor: String) {
+        _uiState.update {
+            it.copy(
+                textoBusquedaCotizacion = valor,
+                error = null,
+                mensaje = null
+            )
+        }
+    }
+
+    /**
+     * Selecciona un cliente.
+     *
+     * Al cambiar el cliente se limpia la cotización seleccionada
+     * porque una cotización pertenece a un cliente específico.
+     */
     fun seleccionarCliente(id: Long) {
+
         _uiState.update {
             it.copy(
                 clienteSeleccionadoId = id,
                 cotizacionSeleccionadaId = null,
+                textoBusquedaCotizacion = "",
                 error = null,
                 mensaje = null
             )
         }
     }
 
+    /**
+     * Selecciona una cotización.
+     */
     fun seleccionarCotizacion(id: Long?) {
+
         val estado = _uiState.value
+
         val cotizacion = estado.cotizaciones.firstOrNull {
-            it.id == id && it.clienteId == estado.clienteSeleccionadoId
+            it.id == id &&
+                    it.clienteId ==
+                    estado.clienteSeleccionadoId
         }
+
+        _uiState.update {
+
+            it.copy(
+                cotizacionSeleccionadaId =
+                    cotizacion?.id,
+
+                descripcion =
+                    cotizacion?.descripcion
+                        ?: it.descripcion,
+
+                importe =
+                    cotizacion?.let {
+                        BigDecimal.valueOf(
+                            it.importeCentavos,
+                            2
+                        )
+                            .setScale(2)
+                            .toPlainString()
+                    } ?: it.importe,
+
+                textoBusquedaCotizacion = "",
+                error = null,
+                mensaje = null
+            )
+        }
+    }
+
+    /**
+     * Modifica la descripción.
+     */
+    fun cambiarDescripcion(valor: String) {
 
         _uiState.update {
             it.copy(
-                cotizacionSeleccionadaId = cotizacion?.id,
-                // Si se selecciona una cotización, toma sus datos iniciales.
-                descripcion = cotizacion?.descripcion ?: it.descripcion,
-                importe = cotizacion?.let {
-                    BigDecimal.valueOf(it.importeCentavos, 2)
-                        .setScale(2)
-                        .toPlainString()
-                } ?: it.importe,
+                descripcion = valor,
                 error = null,
                 mensaje = null
             )
         }
     }
 
-    fun cambiarDescripcion(valor: String) {
-        _uiState.update {
-            it.copy(descripcion = valor, error = null, mensaje = null)
-        }
-    }
-
+    /**
+     * Modifica el importe.
+     *
+     * Solamente permite hasta dos decimales.
+     */
     fun cambiarImporte(valor: String) {
+
         val normalizado = valor.replace(',', '.')
-        if (normalizado.isEmpty() ||
-            normalizado.matches(Regex("^\\d{0,9}(\\.\\d{0,2})?$"))
+
+        if (
+            normalizado.isEmpty() ||
+            normalizado.matches(
+                Regex("^\\d{0,9}(\\.\\d{0,2})?$")
+            )
         ) {
+
             _uiState.update {
-                it.copy(importe = normalizado, error = null, mensaje = null)
+                it.copy(
+                    importe = normalizado,
+                    error = null,
+                    mensaje = null
+                )
             }
         }
     }
 
+    /**
+     * Modifica la fecha de entrega estimada.
+     */
     fun cambiarFechaEntrega(valor: String) {
+
         _uiState.update {
             it.copy(
                 fechaEntregaEstimada = valor,
@@ -176,107 +282,426 @@ class TrabajoViewModel(
         }
     }
 
+    /**
+     * Modifica las notas.
+     */
     fun cambiarNotas(valor: String) {
+
         _uiState.update {
-            it.copy(notas = valor, error = null, mensaje = null)
+            it.copy(
+                notas = valor,
+                error = null,
+                mensaje = null
+            )
         }
     }
 
     /**
-     * Registra el trabajo con validaciones básicas.
+     * Carga un trabajo existente en el formulario.
+     */
+    fun editarTrabajo(id: Long) {
+
+        viewModelScope.launch {
+
+            try {
+
+                val trabajo =
+                    trabajoRepository.obtenerPorId(id)
+
+                if (trabajo == null) {
+                    mostrarError(
+                        "No se encontró el trabajo."
+                    )
+                    return@launch
+                }
+
+                // Un trabajo entregado ya no se puede editar.
+                if (trabajo.estado == "ENTREGADO") {
+                    mostrarError(
+                        "Un trabajo entregado ya no puede editarse."
+                    )
+                    return@launch
+                }
+
+                val clienteExiste =
+                    _uiState.value.clientes.any {
+                        it.id == trabajo.clienteId
+                    }
+
+                if (!clienteExiste) {
+                    mostrarError(
+                        "El cliente del trabajo ya no está activo."
+                    )
+                    return@launch
+                }
+
+                val importe =
+                    BigDecimal.valueOf(
+                        trabajo.importeCentavos,
+                        2
+                    )
+                        .setScale(2)
+                        .toPlainString()
+
+                val fecha =
+                    trabajo.fechaEntregaEstimada?.let {
+                        SimpleDateFormat(
+                            "yyyy-MM-dd",
+                            Locale.ROOT
+                        ).format(it)
+                    } ?: ""
+
+                _uiState.update {
+
+                    it.copy(
+                        trabajoEditandoId = trabajo.id,
+                        clienteSeleccionadoId =
+                            trabajo.clienteId,
+                        cotizacionSeleccionadaId =
+                            trabajo.cotizacionId,
+                        descripcion =
+                            trabajo.descripcion,
+                        importe = importe,
+                        fechaEntregaEstimada = fecha,
+                        notas = trabajo.notas,
+                        textoBusquedaCliente = "",
+                        textoBusquedaCotizacion = "",
+                        error = null,
+                        mensaje =
+                            "Editando ${trabajo.folio}"
+                    )
+                }
+
+            } catch (_: Exception) {
+
+                mostrarError(
+                    "No fue posible cargar el trabajo."
+                )
+            }
+        }
+    }
+
+    /**
+     * Cancela la edición y deja nuevamente el formulario
+     * listo para registrar un trabajo.
+     */
+    fun cancelarEdicion() {
+
+        _uiState.update {
+
+            it.copy(
+                trabajoEditandoId = null,
+                clienteSeleccionadoId =
+                    it.clientes.firstOrNull()?.id,
+                cotizacionSeleccionadaId = null,
+                descripcion = "",
+                importe = "",
+                fechaEntregaEstimada = "",
+                notas = "",
+                textoBusquedaCliente = "",
+                textoBusquedaCotizacion = "",
+                error = null,
+                mensaje = null
+            )
+        }
+    }
+
+    /**
+     * Guarda un trabajo nuevo o actualiza uno existente.
      */
     fun guardarTrabajo() {
+
         val estado = _uiState.value
 
         if (estado.guardando) return
 
-        val clienteId = estado.clienteSeleccionadoId
-        if (clienteId == null ||
-            estado.clientes.none { it.id == clienteId }
+        val clienteId =
+            estado.clienteSeleccionadoId
+
+        if (
+            clienteId == null ||
+            estado.clientes.none {
+                it.id == clienteId
+            }
         ) {
-            mostrarError("Selecciona un cliente activo.")
+            mostrarError(
+                "Selecciona un cliente activo."
+            )
             return
         }
 
-        val cotizacion = estado.cotizaciones.firstOrNull {
-            it.id == estado.cotizacionSeleccionadaId &&
-                    it.clienteId == clienteId
-        }
+        val cotizacion =
+            estado.cotizaciones.firstOrNull {
 
-        if (estado.cotizacionSeleccionadaId != null && cotizacion == null) {
-            mostrarError("La cotización seleccionada ya no está disponible.")
+                it.id ==
+                        estado.cotizacionSeleccionadaId &&
+                        it.clienteId ==
+                        clienteId
+            }
+
+        if (
+            estado.cotizacionSeleccionadaId != null &&
+            cotizacion == null
+        ) {
+            mostrarError(
+                "La cotización seleccionada ya no está disponible."
+            )
             return
         }
 
-        val descripcion = estado.descripcion.trim()
+        val descripcion =
+            estado.descripcion.trim()
+
         if (descripcion.isBlank()) {
-            mostrarError("La descripción del trabajo es obligatoria.")
+            mostrarError(
+                "La descripción del trabajo es obligatoria."
+            )
             return
         }
 
-        // Una cotización aceptada define el importe del trabajo.
-        val importeCentavos = if (cotizacion != null) {
-            cotizacion.importeCentavos
-        } else {
-            convertirImporteCentavos(estado.importe)
-                ?: run {
-                    mostrarError("Ingresa un importe válido mayor que cero.")
+        /**
+         * Si existe una cotización, su importe es el importe
+         * inicial del trabajo.
+         *
+         * Si no existe, se toma el importe capturado manualmente.
+         */
+        val importeCentavos =
+            if (cotizacion != null) {
+
+                cotizacion.importeCentavos
+
+            } else {
+
+                convertirImporteCentavos(
+                    estado.importe
+                ) ?: run {
+
+                    mostrarError(
+                        "Ingresa un importe válido mayor que cero."
+                    )
+
                     return
                 }
+            }
+
+        if (importeCentavos <= 0L) {
+
+            mostrarError(
+                "El importe debe ser mayor que cero."
+            )
+
+            return
         }
 
-        val fechaEntrega = if (estado.fechaEntregaEstimada.isBlank()) {
-            null
-        } else {
-            convertirFechaFinDia(estado.fechaEntregaEstimada)
-                ?: run {
-                    mostrarError("Usa el formato de fecha AAAA-MM-DD.")
+        val fechaEntrega =
+            if (estado.fechaEntregaEstimada.isBlank()) {
+
+                null
+
+            } else {
+
+                convertirFechaFinDia(
+                    estado.fechaEntregaEstimada
+                ) ?: run {
+
+                    mostrarError(
+                        "Usa el formato de fecha AAAA-MM-DD."
+                    )
+
                     return
                 }
-        }
+            }
 
-        if (fechaEntrega != null &&
-            fechaEntrega < inicioDelDia(System.currentTimeMillis())
+        if (
+            fechaEntrega != null &&
+            fechaEntrega <
+            inicioDelDia(System.currentTimeMillis())
         ) {
-            mostrarError("La fecha de entrega debe ser hoy o posterior.")
+
+            mostrarError(
+                "La fecha de entrega debe ser hoy o posterior."
+            )
+
             return
         }
 
         viewModelScope.launch {
+
             _uiState.update {
-                it.copy(guardando = true, error = null, mensaje = null)
+                it.copy(
+                    guardando = true,
+                    error = null,
+                    mensaje = null
+                )
             }
 
             try {
-                val trabajo = TrabajoEntity(
-                    clienteId = clienteId,
-                    cotizacionId = cotizacion?.id,
-                    folio = "TRAB-${System.currentTimeMillis()}",
-                    descripcion = descripcion,
-                    importeCentavos = importeCentavos,
-                    fechaEntregaEstimada = fechaEntrega,
-                    notas = estado.notas.trim()
-                )
 
-                val folio = trabajo.folio
-                trabajoRepository.insertar(trabajo)
+                val idEditando =
+                    estado.trabajoEditandoId
 
-                _uiState.update {
-                    it.copy(
-                        descripcion = "",
-                        importe = "",
-                        fechaEntregaEstimada = "",
-                        notas = "",
-                        cotizacionSeleccionadaId = null,
-                        guardando = false,
-                        mensaje = "Trabajo registrado: $folio"
+                if (idEditando == null) {
+
+                    // ------------------------------------------------
+                    // NUEVO TRABAJO
+                    // ------------------------------------------------
+
+                    val trabajo =
+                        TrabajoEntity(
+                            clienteId = clienteId,
+                            cotizacionId =
+                                cotizacion?.id,
+                            folio =
+                                "TRAB-${System.currentTimeMillis()}",
+                            descripcion = descripcion,
+                            importeCentavos =
+                                importeCentavos,
+                            fechaEntregaEstimada =
+                                fechaEntrega,
+                            notas =
+                                estado.notas.trim()
+                        )
+
+                    trabajoRepository.insertar(
+                        trabajo
                     )
+
+                    limpiarFormulario()
+
+                    _uiState.update {
+                        it.copy(
+                            guardando = false,
+                            mensaje =
+                                "Trabajo registrado: ${trabajo.folio}"
+                        )
+                    }
+
+                } else {
+
+                    // ------------------------------------------------
+                    // EDICIÓN
+                    // ------------------------------------------------
+
+                    val existente =
+                        trabajoRepository.obtenerPorId(
+                            idEditando
+                        )
+
+                    if (existente == null) {
+
+                        mostrarError(
+                            "El trabajo ya no existe."
+                        )
+
+                        _uiState.update {
+                            it.copy(
+                                guardando = false
+                            )
+                        }
+
+                        return@launch
+                    }
+
+                    if (existente.estado == "ENTREGADO") {
+
+                        mostrarError(
+                            "Un trabajo entregado no puede modificarse."
+                        )
+
+                        _uiState.update {
+                            it.copy(
+                                guardando = false
+                            )
+                        }
+
+                        return@launch
+                    }
+
+                    /**
+                     * Regla financiera importante:
+                     *
+                     * El nuevo importe jamás puede ser menor
+                     * que el total de pagos realizados.
+                     */
+                    val totalPagado =
+                        pagoRepository
+                            .obtenerTotalPagado(
+                                existente.id
+                            )
+
+                    if (
+                        importeCentavos <
+                        totalPagado
+                    ) {
+
+                        mostrarError(
+                            "El importe no puede ser menor que " +
+                                    "el total pagado (${
+                                        formatearMoneda(
+                                            totalPagado
+                                        )
+                                    })."
+                        )
+
+                        _uiState.update {
+                            it.copy(
+                                guardando = false
+                            )
+                        }
+
+                        return@launch
+                    }
+
+                    val actualizado =
+                        existente.copy(
+
+                            // El folio original se conserva.
+                            folio = existente.folio,
+
+                            clienteId =
+                                clienteId,
+
+                            cotizacionId =
+                                cotizacion?.id,
+
+                            descripcion =
+                                descripcion,
+
+                            importeCentavos =
+                                importeCentavos,
+
+                            fechaEntregaEstimada =
+                                fechaEntrega,
+
+                            notas =
+                                estado.notas.trim()
+                        )
+
+                    trabajoRepository.actualizar(
+                        actualizado
+                    )
+
+                    val folio =
+                        existente.folio
+
+                    limpiarFormulario()
+
+                    _uiState.update {
+                        it.copy(
+                            guardando = false,
+                            mensaje =
+                                "Trabajo actualizado: $folio"
+                        )
+                    }
                 }
+
             } catch (_: Exception) {
+
                 _uiState.update {
                     it.copy(
                         guardando = false,
-                        error = "No fue posible guardar el trabajo."
+                        error =
+                            "No fue posible guardar el trabajo."
                     )
                 }
             }
@@ -287,161 +712,310 @@ class TrabajoViewModel(
      * Cambia el estado del trabajo.
      *
      * Reglas:
-     * - ENTREGADO es un estado final.
-     * - CANCELADO puede revertirse posteriormente.
-     * - Para entregar primero debe estar TERMINADO.
-     * - Cancelar no elimina los pagos existentes.
+     * - ENTREGADO es definitivo.
+     * - ENTREGADO solamente puede venir de TERMINADO.
+     * - CANCELADO puede volver a un estado operativo.
+     * - Cancelar nunca elimina pagos.
      */
     fun cambiarEstado(
         id: Long,
         nuevoEstado: String
     ) {
+
         if (nuevoEstado !in estadosPermitidos) {
-            mostrarError("El estado seleccionado no es válido.")
+            mostrarError(
+                "Estado no válido."
+            )
             return
         }
 
         viewModelScope.launch {
+
             try {
-                val trabajo = trabajoRepository.obtenerPorId(id)
+
+                val trabajo =
+                    trabajoRepository.obtenerPorId(id)
 
                 if (trabajo == null) {
-                    mostrarError("No se encontró el trabajo.")
+
+                    mostrarError(
+                        "No se encontró el trabajo."
+                    )
+
                     return@launch
                 }
 
-                /*
-                 * ENTREGADO sí es definitivo.
-                 *
-                 * CANCELADO NO es definitivo porque el requerimiento permite
-                 * volver posteriormente a otro estado.
+                /**
+                 * ENTREGADO es el único estado completamente final.
                  */
                 if (trabajo.estado == "ENTREGADO") {
+
                     mostrarError(
-                        "Un trabajo entregado no puede cambiar de estado."
+                        "Un trabajo entregado ya no puede cambiar de estado."
                     )
+
                     return@launch
                 }
 
-                /*
-                 * Para marcar como ENTREGADO primero debe pasar por TERMINADO.
+                /**
+                 * No permitimos marcar como entregado
+                 * desde ningún estado diferente de TERMINADO.
                  */
                 if (
                     nuevoEstado == "ENTREGADO" &&
                     trabajo.estado != "TERMINADO"
                 ) {
+
                     mostrarError(
                         "Primero marca el trabajo como terminado."
                     )
+
                     return@launch
                 }
 
-                val actualizado = trabajo.copy(
-                    estado = nuevoEstado,
+                /**
+                 * Si se cancela, únicamente cambia el estado.
+                 *
+                 * Los pagos permanecen intactos.
+                 */
+                val fechaEntregaReal =
+                    if (nuevoEstado == "ENTREGADO") {
 
-                    /*
-                     * La fecha real solamente se registra al entregar.
-                     *
-                     * Si regresamos desde CANCELADO a otro estado,
-                     * conservamos la fecha existente porque no corresponde
-                     * modificarla hasta que realmente se entregue.
-                     */
-                    fechaEntregaReal =
-                        if (nuevoEstado == "ENTREGADO") {
-                            System.currentTimeMillis()
-                        } else {
-                            trabajo.fechaEntregaReal
-                        }
+                        System.currentTimeMillis()
+
+                    } else if (
+                        nuevoEstado == "CANCELADO"
+                    ) {
+
+                        // Al cancelar no se elimina historial.
+                        trabajo.fechaEntregaReal
+
+                    } else {
+
+                        // Si se recupera de CANCELADO,
+                        // conservamos la fecha existente solamente
+                        // si realmente fue una entrega anterior.
+                        trabajo.fechaEntregaReal
+                    }
+
+                val actualizado =
+                    trabajo.copy(
+                        estado = nuevoEstado,
+                        fechaEntregaReal =
+                            fechaEntregaReal
+                    )
+
+                trabajoRepository.actualizar(
+                    actualizado
                 )
-
-                trabajoRepository.actualizar(actualizado)
 
                 _uiState.update {
                     it.copy(
-                        mensaje = when (nuevoEstado) {
-                            "CANCELADO" ->
-                                "Trabajo cancelado correctamente."
+                        mensaje =
+                            when (nuevoEstado) {
+                                "CANCELADO" ->
+                                    "Trabajo cancelado. Los pagos históricos se conservaron."
 
-                            else ->
-                                "Estado del trabajo actualizado."
-                        }
+                                else ->
+                                    "Estado del trabajo actualizado."
+                            }
                     )
                 }
 
             } catch (_: Exception) {
+
                 mostrarError(
-                    "No fue posible actualizar el estado del trabajo."
+                    "No fue posible actualizar el estado."
                 )
             }
         }
     }
 
     /**
-     * Obtiene el total que ya ha sido pagado de un trabajo.
-     *
-     * Se consulta directamente al repositorio para trabajar con el valor
-     * actual de la base de datos y no con información potencialmente antigua
-     * de la interfaz.
+     * Limpia el formulario.
      */
-    private suspend fun obtenerTotalPagado(
-        trabajoId: Long
-    ): Long {
-        return pagoRepository.obtenerTotalPagado(trabajoId)
+    private fun limpiarFormulario() {
+
+        _uiState.update {
+
+            it.copy(
+                trabajoEditandoId = null,
+                clienteSeleccionadoId =
+                    it.clientes.firstOrNull()?.id,
+                cotizacionSeleccionadaId = null,
+                descripcion = "",
+                importe = "",
+                fechaEntregaEstimada = "",
+                notas = "",
+                textoBusquedaCliente = "",
+                textoBusquedaCotizacion = ""
+            )
+        }
     }
 
-    private fun convertirImporteCentavos(valor: String): Long? {
-        return try {
-            val decimal = valor.toBigDecimalOrNull() ?: return null
+    /**
+     * Convierte un importe decimal a centavos.
+     */
+    private fun convertirImporteCentavos(
+        valor: String
+    ): Long? {
 
-            if (decimal <= BigDecimal.ZERO) return null
+        return try {
+
+            val decimal =
+                valor.toBigDecimalOrNull()
+                    ?: return null
+
+            if (decimal <= BigDecimal.ZERO) {
+                return null
+            }
 
             decimal
-                .setScale(2, RoundingMode.UNNECESSARY)
+                .setScale(
+                    2,
+                    RoundingMode.UNNECESSARY
+                )
                 .movePointRight(2)
                 .longValueExact()
+
         } catch (_: ArithmeticException) {
+
             null
         }
     }
 
-    private fun convertirFechaFinDia(valor: String): Long? {
-        val formato = SimpleDateFormat("yyyy-MM-dd", Locale.ROOT).apply {
-            isLenient = false
+    /**
+     * Convierte una fecha AAAA-MM-DD
+     * al final del día.
+     */
+    private fun convertirFechaFinDia(
+        valor: String
+    ): Long? {
+
+        val formato =
+            SimpleDateFormat(
+                "yyyy-MM-dd",
+                Locale.ROOT
+            ).apply {
+                isLenient = false
+            }
+
+        val posicion =
+            ParsePosition(0)
+
+        val fecha =
+            formato.parse(
+                valor,
+                posicion
+            )
+
+        if (
+            fecha == null ||
+            posicion.index != valor.length
+        ) {
+            return null
         }
 
-        val posicion = ParsePosition(0)
-        val fecha = formato.parse(valor, posicion)
-
-        if (fecha == null || posicion.index != valor.length) return null
-
         return Calendar.getInstance().apply {
+
             time = fecha
-            set(Calendar.HOUR_OF_DAY, 23)
-            set(Calendar.MINUTE, 59)
-            set(Calendar.SECOND, 59)
-            set(Calendar.MILLISECOND, 999)
+
+            set(
+                Calendar.HOUR_OF_DAY,
+                23
+            )
+
+            set(
+                Calendar.MINUTE,
+                59
+            )
+
+            set(
+                Calendar.SECOND,
+                59
+            )
+
+            set(
+                Calendar.MILLISECOND,
+                999
+            )
+
         }.timeInMillis
     }
 
-    private fun inicioDelDia(fecha: Long): Long {
+    /**
+     * Obtiene el inicio del día actual.
+     */
+    private fun inicioDelDia(
+        fecha: Long
+    ): Long {
+
         return Calendar.getInstance().apply {
+
             timeInMillis = fecha
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
+
+            set(
+                Calendar.HOUR_OF_DAY,
+                0
+            )
+
+            set(
+                Calendar.MINUTE,
+                0
+            )
+
+            set(
+                Calendar.SECOND,
+                0
+            )
+
+            set(
+                Calendar.MILLISECOND,
+                0
+            )
+
         }.timeInMillis
     }
 
+    /**
+     * Formatea centavos como moneda mexicana.
+     */
+    private fun formatearMoneda(
+        centavos: Long
+    ): String {
+
+        return String.format(
+            Locale("es", "MX"),
+            "$%,.2f",
+            centavos / 100.0
+        )
+    }
+
+    /**
+     * Limpia los mensajes de pantalla.
+     */
     fun limpiarMensaje() {
+
         _uiState.update {
-            it.copy(error = null, mensaje = null)
+            it.copy(
+                error = null,
+                mensaje = null
+            )
         }
     }
 
-    private fun mostrarError(mensaje: String) {
+    /**
+     * Muestra un error.
+     */
+    private fun mostrarError(
+        mensaje: String
+    ) {
+
         _uiState.update {
-            it.copy(error = mensaje, mensaje = null)
+            it.copy(
+                error = mensaje,
+                mensaje = null
+            )
         }
     }
 }

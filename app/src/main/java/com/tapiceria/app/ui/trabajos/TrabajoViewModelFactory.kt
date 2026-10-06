@@ -7,7 +7,8 @@ import com.tapiceria.app.domain.repository.PagoRepository
 import com.tapiceria.app.domain.repository.TrabajoRepository
 
 /**
- * Inyecta los repositorios necesarios para trabajos.
+ * Factory para construir TrabajoViewModel
+ * con sus repositorios reales.
  */
 class TrabajoViewModelFactory(
     private val trabajoRepository: TrabajoRepository,
@@ -21,15 +22,22 @@ class TrabajoViewModelFactory(
     ): T {
 
         require(
-            modelClass.isAssignableFrom(TrabajoViewModel::class.java)
+            modelClass.isAssignableFrom(
+                TrabajoViewModel::class.java
+            )
         ) {
             "ViewModel no soportado: ${modelClass.name}"
         }
 
         return TrabajoViewModel(
-            trabajoRepository = trabajoRepository,
-            clienteRepository = clienteRepository,
-            pagoRepository = pagoRepository
+            trabajoRepository =
+                trabajoRepository,
+
+            clienteRepository =
+                clienteRepository,
+
+            pagoRepository =
+                pagoRepository
         ) as T
     }
 }
