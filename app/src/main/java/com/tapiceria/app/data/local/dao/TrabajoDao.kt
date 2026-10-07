@@ -1,4 +1,3 @@
-
 package com.tapiceria.app.data.local.dao
 
 import androidx.room.Dao
@@ -19,11 +18,33 @@ interface TrabajoDao {
     @Update
     suspend fun actualizar(trabajo: TrabajoEntity)
 
-    @Query("SELECT * FROM trabajos WHERE id = :id LIMIT 1")
+    @Query("""
+        SELECT *
+        FROM trabajos
+        WHERE id = :id
+        LIMIT 1
+    """)
     suspend fun obtenerPorId(id: Long): TrabajoEntity?
 
     /**
-     * Devuelve los trabajos con el nombre del cliente.
+     * Busca el trabajo activo que utiliza una cotización.
+     *
+     * CANCELADO libera la cotización para que pueda volver
+     * a utilizarse en el flujo del negocio.
+     */
+    @Query("""
+        SELECT *
+        FROM trabajos
+        WHERE cotizacionId = :cotizacionId
+          AND estado <> 'CANCELADO'
+        LIMIT 1
+    """)
+    suspend fun obtenerActivoPorCotizacion(
+        cotizacionId: Long
+    ): TrabajoEntity?
+
+    /**
+     * Devuelve todos los trabajos para historial y seguimiento.
      */
     @Query("""
         SELECT
@@ -40,13 +61,19 @@ interface TrabajoDao {
             t.estado AS estado,
             t.notas AS notas
         FROM trabajos t
-        INNER JOIN clientes c ON c.id = t.clienteId
+        INNER JOIN clientes c
+            ON c.id = t.clienteId
         ORDER BY t.fechaRecepcion DESC
     """)
     fun observarTodos(): Flow<List<TrabajoListado>>
 
     /**
-     * Obtiene cotizaciones aceptadas para convertirlas en trabajos.
+     * Obtiene cotizaciones que pueden utilizarse en un trabajo.
+     *
+     * Normalmente deben estar ACEPTADAS.
+     *
+     * También incluimos la cotización de un trabajo CANCELADO
+     * para que ese trabajo pueda seguir editándose.
      */
     @Query("""
         SELECT
@@ -57,17 +84,32 @@ interface TrabajoDao {
             co.descripcion AS descripcion,
             co.importeCentavos AS importeCentavos
         FROM cotizaciones co
-        INNER JOIN atenciones a ON a.id = co.atencionId
-        INNER JOIN clientes cl ON cl.id = a.clienteId
+        INNER JOIN atenciones a
+            ON a.id = co.atencionId
+        INNER JOIN clientes cl
+            ON cl.id = a.clienteId
         WHERE co.estado = 'ACEPTADA'
+           OR EXISTS (
+                SELECT 1
+                FROM trabajos t
+                WHERE t.cotizacionId = co.id
+                  AND t.estado = 'CANCELADO'
+           )
         ORDER BY co.fechaCreacion DESC
     """)
     fun observarCotizacionesAceptadas():
             Flow<List<CotizacionTrabajoOpcion>>
 
     /**
-     * Permite actualizar el estado sin modificar los demás datos.
+     * Actualiza únicamente el estado del trabajo.
      */
-    @Query("UPDATE trabajos SET estado = :estado WHERE id = :id")
-    suspend fun actualizarEstado(id: Long, estado: String): Int
+    @Query("""
+        UPDATE trabajos
+        SET estado = :estado
+        WHERE id = :id
+    """)
+    suspend fun actualizarEstado(
+        id: Long,
+        estado: String
+    ): Int
 }

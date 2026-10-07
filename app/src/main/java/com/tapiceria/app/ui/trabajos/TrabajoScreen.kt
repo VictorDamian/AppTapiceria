@@ -55,6 +55,11 @@ import com.tapiceria.app.domain.model.TrabajoListado
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 
 /**
  * Pantalla principal de trabajos.
@@ -438,6 +443,7 @@ fun TrabajoScreen(
 /**
  * Formulario para crear o editar un trabajo.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun FormularioTrabajo(
     clientes: List<ClienteEntity>,
@@ -464,6 +470,9 @@ private fun FormularioTrabajo(
     onGuardar: () -> Unit,
     onCancelarEdicion: () -> Unit
 ) {
+    var mostrarCalendario by remember {
+        mutableStateOf(false)
+    }
 
     val clienteSeleccionado =
         todosLosClientes.firstOrNull {
@@ -1059,32 +1068,118 @@ private fun FormularioTrabajo(
             // FECHA DE ENTREGA
             // --------------------------------------------------------
 
-            OutlinedTextField(
-                value = fechaEntrega,
-                onValueChange =
-                    onFechaEntregaChange,
-                modifier =
-                    Modifier.fillMaxWidth(),
-                label = {
-                    Text(
-                        "Entrega estimada (opcional)"
-                    )
-                },
-                placeholder = {
-                    Text("AAAA-MM-DD")
-                },
-                leadingIcon = {
-                    Icon(
-                        imageVector =
-                            Icons.Default.Event,
-                        contentDescription = null
-                    )
-                },
-                singleLine = true,
-                enabled = !guardando,
-                shape =
-                    RoundedCornerShape(12.dp)
+            Text(
+                text = "Fecha de entrega",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+
+            OutlinedButton(
+                onClick = {
+                    mostrarCalendario = true
+                },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !guardando,
+                shape = RoundedCornerShape(12.dp)
+            ) {
+
+                Icon(
+                    imageVector = Icons.Default.Event,
+                    contentDescription = null
+                )
+
+                Spacer(
+                    modifier = Modifier.width(8.dp)
+                )
+
+                Text(
+                    text =
+                        if (fechaEntrega.isBlank()) {
+                            "Seleccionar fecha de entrega"
+                        } else {
+                            "Entrega: $fechaEntrega"
+                        }
+                )
+            }
+
+            if (fechaEntrega.isNotBlank()) {
+
+                TextButton(
+                    onClick = {
+                        onFechaEntregaChange("")
+                    },
+                    enabled = !guardando,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Quitar fecha")
+                }
+            }
+
+            /**
+             * Diálogo de selección de fecha.
+             */
+            if (mostrarCalendario) {
+
+                val fechaInicial =
+                    convertirTextoAFecha(
+                        fechaEntrega
+                    )
+
+                val datePickerState =
+                    rememberDatePickerState(
+                        initialSelectedDateMillis =
+                            fechaInicial
+                    )
+
+                DatePickerDialog(
+
+                    onDismissRequest = {
+                        mostrarCalendario = false
+                    },
+
+                    confirmButton = {
+
+                        TextButton(
+                            onClick = {
+
+                                val millis =
+                                    datePickerState
+                                        .selectedDateMillis
+
+                                if (millis != null) {
+
+                                    onFechaEntregaChange(
+                                        convertirFechaATexto(
+                                            millis
+                                        )
+                                    )
+                                }
+
+                                mostrarCalendario = false
+                            }
+                        ) {
+                            Text("Aceptar")
+                        }
+                    },
+
+                    dismissButton = {
+
+                        TextButton(
+                            onClick = {
+                                mostrarCalendario = false
+                            }
+                        ) {
+                            Text("Cancelar")
+                        }
+                    }
+
+                ) {
+
+                    DatePicker(
+                        state = datePickerState
+                    )
+                }
+            }
 
             // --------------------------------------------------------
             // NOTAS
@@ -1784,5 +1879,45 @@ private fun formatoMoneda(
         Locale("es", "MX"),
         "$%,.2f MXN",
         centavos / 100.0
+    )
+}
+/**
+ * Convierte una fecha AAAA-MM-DD a milisegundos.
+ */
+private fun convertirTextoAFecha(
+    valor: String
+): Long? {
+
+    if (valor.isBlank()) {
+        return null
+    }
+
+    return try {
+
+        SimpleDateFormat(
+            "yyyy-MM-dd",
+            Locale.ROOT
+        ).apply {
+            isLenient = false
+        }.parse(valor)?.time
+
+    } catch (_: Exception) {
+
+        null
+    }
+}
+
+/**
+ * Convierte milisegundos a AAAA-MM-DD.
+ */
+private fun convertirFechaATexto(
+    fecha: Long
+): String {
+
+    return SimpleDateFormat(
+        "yyyy-MM-dd",
+        Locale.ROOT
+    ).format(
+        Date(fecha)
     )
 }

@@ -189,39 +189,47 @@ class TrabajoViewModel(
     }
 
     /**
-     * Selecciona una cotización.
+     * Selecciona una cotización para el trabajo.
      */
-    fun seleccionarCotizacion(id: Long?) {
+    fun seleccionarCotizacion(
+        id: Long?
+    ) {
 
-        val estado = _uiState.value
+        if (id == null) {
 
-        val cotizacion = estado.cotizaciones.firstOrNull {
-            it.id == id &&
-                    it.clienteId ==
-                    estado.clienteSeleccionadoId
+            _uiState.update {
+                it.copy(
+                    cotizacionSeleccionadaId = null,
+                    error = null,
+                    mensaje = null
+                )
+            }
+
+            return
+        }
+
+        val clienteId =
+            _uiState.value.clienteSeleccionadoId
+
+        val cotizacion =
+            _uiState.value.cotizaciones
+                .firstOrNull {
+                    it.id == id &&
+                            it.clienteId == clienteId
+                }
+
+        if (cotizacion == null) {
+
+            mostrarError(
+                "La cotización no corresponde al cliente seleccionado."
+            )
+
+            return
         }
 
         _uiState.update {
-
             it.copy(
-                cotizacionSeleccionadaId =
-                    cotizacion?.id,
-
-                descripcion =
-                    cotizacion?.descripcion
-                        ?: it.descripcion,
-
-                importe =
-                    cotizacion?.let {
-                        BigDecimal.valueOf(
-                            it.importeCentavos,
-                            2
-                        )
-                            .setScale(2)
-                            .toPlainString()
-                    } ?: it.importe,
-
-                textoBusquedaCotizacion = "",
+                cotizacionSeleccionadaId = id,
                 error = null,
                 mensaje = null
             )
@@ -408,15 +416,27 @@ class TrabajoViewModel(
 
     /**
      * Guarda un trabajo nuevo o actualiza uno existente.
+     *
+     * Reglas:
+     * - Cliente obligatorio.
+     * - Cotización obligatoria.
+     * - Una cotización solamente puede pertenecer a un Trabajo activo.
+     * - Un Trabajo CANCELADO libera la cotización.
+     * - El importe nunca puede quedar por debajo de lo ya pagado.
      */
     fun guardarTrabajo() {
 
         val estado = _uiState.value
 
-        if (estado.guardando) return
+        if (estado.guardando) {
+            return
+        }
 
-        val clienteId =
-            estado.clienteSeleccionadoId
+        // ------------------------------------------------------------
+        // CLIENTE
+        // ------------------------------------------------------------
+
+        val clienteId = estado.clienteSeleccionadoId
 
         if (
             clienteId == null ||
@@ -430,22 +450,35 @@ class TrabajoViewModel(
             return
         }
 
+        // ------------------------------------------------------------
+        // COTIZACIÓN OBLIGATORIA
+        // ------------------------------------------------------------
+
+        val cotizacionId =
+            estado.cotizacionSeleccionadaId
+
+        if (cotizacionId == null) {
+
+            mostrarError(
+                "Selecciona una cotización."
+            )
+
+            return
+        }
+
         val cotizacion =
             estado.cotizaciones.firstOrNull {
 
-                it.id ==
-                        estado.cotizacionSeleccionadaId &&
-                        it.clienteId ==
-                        clienteId
+                it.id == cotizacionId &&
+                        it.clienteId == clienteId
             }
 
-        if (
-            estado.cotizacionSeleccionadaId != null &&
-            cotizacion == null
-        ) {
+        if (cotizacion == null) {
+
             mostrarError(
                 "La cotización seleccionada ya no está disponible."
             )
+
             return
         }
 
@@ -453,45 +486,33 @@ class TrabajoViewModel(
             estado.descripcion.trim()
 
         if (descripcion.isBlank()) {
+
             mostrarError(
                 "La descripción del trabajo es obligatoria."
             )
+
             return
         }
 
-        /**
-         * Si existe una cotización, su importe es el importe
-         * inicial del trabajo.
-         *
-         * Si no existe, se toma el importe capturado manualmente.
+        /*
+         * La cotización aceptada determina el importe inicial
+         * del trabajo.
          */
         val importeCentavos =
-            if (cotizacion != null) {
-
-                cotizacion.importeCentavos
-
-            } else {
-
-                convertirImporteCentavos(
-                    estado.importe
-                ) ?: run {
-
-                    mostrarError(
-                        "Ingresa un importe válido mayor que cero."
-                    )
-
-                    return
-                }
-            }
+            cotizacion.importeCentavos
 
         if (importeCentavos <= 0L) {
 
             mostrarError(
-                "El importe debe ser mayor que cero."
+                "El importe de la cotización debe ser mayor que cero."
             )
 
             return
         }
+
+        // ------------------------------------------------------------
+        // FECHA DE ENTREGA
+        // ------------------------------------------------------------
 
         val fechaEntrega =
             if (estado.fechaEntregaEstimada.isBlank()) {
@@ -505,7 +526,7 @@ class TrabajoViewModel(
                 ) ?: run {
 
                     mostrarError(
-                        "Usa el formato de fecha AAAA-MM-DD."
+                        "La fecha de entrega no es válida."
                     )
 
                     return
@@ -515,7 +536,9 @@ class TrabajoViewModel(
         if (
             fechaEntrega != null &&
             fechaEntrega <
-            inicioDelDia(System.currentTimeMillis())
+            inicioDelDia(
+                System.currentTimeMillis()
+            )
         ) {
 
             mostrarError(
@@ -540,19 +563,46 @@ class TrabajoViewModel(
                 val idEditando =
                     estado.trabajoEditandoId
 
+                /*
+                 * Buscamos si la cotización ya pertenece
+                 * a otro trabajo activo.
+                 */
+                val trabajoConCotizacion =
+                    trabajoRepository
+                        .obtenerActivoPorCotizacion(
+                            cotizacionId
+                        )
+
+                if (
+                    trabajoConCotizacion != null &&
+                    trabajoConCotizacion.id != idEditando
+                ) {
+
+                    _uiState.update {
+                        it.copy(
+                            guardando = false,
+                            error =
+                                "La cotización ya está registrada en otro trabajo activo."
+                        )
+                    }
+
+                    return@launch
+                }
+
+                // ----------------------------------------------------
+                // NUEVO TRABAJO
+                // ----------------------------------------------------
+
                 if (idEditando == null) {
 
-                    // ------------------------------------------------
-                    // NUEVO TRABAJO
-                    // ------------------------------------------------
+                    val folio =
+                        "TRAB-${System.currentTimeMillis()}"
 
                     val trabajo =
                         TrabajoEntity(
                             clienteId = clienteId,
-                            cotizacionId =
-                                cotizacion?.id,
-                            folio =
-                                "TRAB-${System.currentTimeMillis()}",
+                            cotizacionId = cotizacionId,
+                            folio = folio,
                             descripcion = descripcion,
                             importeCentavos =
                                 importeCentavos,
@@ -572,127 +622,109 @@ class TrabajoViewModel(
                         it.copy(
                             guardando = false,
                             mensaje =
-                                "Trabajo registrado: ${trabajo.folio}"
+                                "Trabajo registrado: $folio"
                         )
                     }
 
-                } else {
+                    return@launch
+                }
 
-                    // ------------------------------------------------
-                    // EDICIÓN
-                    // ------------------------------------------------
+                // ----------------------------------------------------
+                // EDICIÓN
+                // ----------------------------------------------------
 
-                    val existente =
-                        trabajoRepository.obtenerPorId(
-                            idEditando
-                        )
-
-                    if (existente == null) {
-
-                        mostrarError(
-                            "El trabajo ya no existe."
-                        )
-
-                        _uiState.update {
-                            it.copy(
-                                guardando = false
-                            )
-                        }
-
-                        return@launch
-                    }
-
-                    if (existente.estado == "ENTREGADO") {
-
-                        mostrarError(
-                            "Un trabajo entregado no puede modificarse."
-                        )
-
-                        _uiState.update {
-                            it.copy(
-                                guardando = false
-                            )
-                        }
-
-                        return@launch
-                    }
-
-                    /**
-                     * Regla financiera importante:
-                     *
-                     * El nuevo importe jamás puede ser menor
-                     * que el total de pagos realizados.
-                     */
-                    val totalPagado =
-                        pagoRepository
-                            .obtenerTotalPagado(
-                                existente.id
-                            )
-
-                    if (
-                        importeCentavos <
-                        totalPagado
-                    ) {
-
-                        mostrarError(
-                            "El importe no puede ser menor que " +
-                                    "el total pagado (${
-                                        formatearMoneda(
-                                            totalPagado
-                                        )
-                                    })."
-                        )
-
-                        _uiState.update {
-                            it.copy(
-                                guardando = false
-                            )
-                        }
-
-                        return@launch
-                    }
-
-                    val actualizado =
-                        existente.copy(
-
-                            // El folio original se conserva.
-                            folio = existente.folio,
-
-                            clienteId =
-                                clienteId,
-
-                            cotizacionId =
-                                cotizacion?.id,
-
-                            descripcion =
-                                descripcion,
-
-                            importeCentavos =
-                                importeCentavos,
-
-                            fechaEntregaEstimada =
-                                fechaEntrega,
-
-                            notas =
-                                estado.notas.trim()
-                        )
-
-                    trabajoRepository.actualizar(
-                        actualizado
+                val existente =
+                    trabajoRepository.obtenerPorId(
+                        idEditando
                     )
 
-                    val folio =
-                        existente.folio
-
-                    limpiarFormulario()
+                if (existente == null) {
 
                     _uiState.update {
                         it.copy(
                             guardando = false,
-                            mensaje =
-                                "Trabajo actualizado: $folio"
+                            error =
+                                "El trabajo ya no existe."
                         )
                     }
+
+                    return@launch
+                }
+
+                if (existente.estado == "ENTREGADO") {
+
+                    _uiState.update {
+                        it.copy(
+                            guardando = false,
+                            error =
+                                "Un trabajo entregado no puede modificarse."
+                        )
+                    }
+
+                    return@launch
+                }
+
+                // ----------------------------------------------------
+                // VALIDACIÓN DE PAGOS
+                // ----------------------------------------------------
+
+                val totalPagado =
+                    pagoRepository.obtenerTotalPagado(
+                        existente.id
+                    )
+
+                if (importeCentavos < totalPagado) {
+
+                    _uiState.update {
+                        it.copy(
+                            guardando = false,
+                            error =
+                                "El importe no puede ser menor que " +
+                                        "el total pagado " +
+                                        "(${formatearMoneda(totalPagado)})."
+                        )
+                    }
+
+                    return@launch
+                }
+
+                val actualizado =
+                    existente.copy(
+
+                        // El folio nunca cambia.
+                        folio = existente.folio,
+
+                        clienteId = clienteId,
+
+                        cotizacionId = cotizacionId,
+
+                        descripcion = descripcion,
+
+                        importeCentavos =
+                            importeCentavos,
+
+                        fechaEntregaEstimada =
+                            fechaEntrega,
+
+                        notas =
+                            estado.notas.trim()
+                    )
+
+                trabajoRepository.actualizar(
+                    actualizado
+                )
+
+                val folio =
+                    existente.folio
+
+                limpiarFormulario()
+
+                _uiState.update {
+                    it.copy(
+                        guardando = false,
+                        mensaje =
+                            "Trabajo actualizado: $folio"
+                    )
                 }
 
             } catch (_: Exception) {

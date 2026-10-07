@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.tapiceria.app.data.local.entity.CotizacionEntity
 import com.tapiceria.app.domain.repository.AtencionRepository
 import com.tapiceria.app.domain.repository.CotizacionRepository
+import com.tapiceria.app.domain.repository.TrabajoRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,9 +24,10 @@ import java.util.Locale
  */
 class CotizacionViewModel(
     private val cotizacionRepository: CotizacionRepository,
-    private val atencionRepository: AtencionRepository
-) : ViewModel() {
-
+    private val atencionRepository: AtencionRepository,
+    private val trabajoRepository: TrabajoRepository
+) : ViewModel()
+{
     private val _uiState =
         MutableStateFlow(CotizacionUiState())
 
@@ -547,21 +549,46 @@ class CotizacionViewModel(
                         return@launch
                     }
 
-                    /**
-                     * No permitimos modificar una cotización
-                     * que ya no está pendiente.
-                     *
-                     * Esto conserva la regla existente:
-                     * ACEPTADA, RECHAZADA y VENCIDA son estados
-                     * históricos.
-                     */
-                    if (existente.estado != "PENDIENTE") {
+                    /*
+ * VENCIDA permanece como estado histórico.
+ * PENDIENTE, ACEPTADA y RECHAZADA pueden editarse,
+ * siempre que la cotización no esté utilizada por
+ * un Trabajo activo.
+ */
+                    if (existente.estado == "VENCIDA") {
 
                         _uiState.update {
                             it.copy(
                                 guardando = false,
                                 error =
-                                    "Solo se pueden editar cotizaciones pendientes."
+                                    "Una cotización vencida no puede editarse."
+                            )
+                        }
+
+                        return@launch
+                    }
+
+                    /*
+                     * Una cotización utilizada por un Trabajo activo
+                     * queda protegida.
+                     *
+                     * Si el Trabajo está CANCELADO, el repositorio no
+                     * lo devuelve y la cotización puede modificarse.
+                     */
+                    val trabajoActivo =
+                        trabajoRepository
+                            .obtenerActivoPorCotizacion(
+                                existente.id
+                            )
+
+                    if (trabajoActivo != null) {
+
+                        _uiState.update {
+                            it.copy(
+                                guardando = false,
+                                error =
+                                    "No se puede editar la cotización porque está registrada en el trabajo ${trabajoActivo.folio}. " +
+                                            "Cancela primero ese trabajo."
                             )
                         }
 
@@ -614,17 +641,37 @@ class CotizacionViewModel(
     }
 
     /**
-     * Cambia el estado de una cotización pendiente.
+     * Cambia el estado de una cotización.
+     *
+     * Estados modificables:
+     * - PENDIENTE
+     * - ACEPTADA
+     * - RECHAZADA
+     *
+     * Si la cotización pertenece a un Trabajo activo,
+     * no se permite cambiar su estado.
+     *
+     * Si el Trabajo está CANCELADO, la cotización vuelve
+     * a quedar disponible para modificar su estado.
      */
     fun cambiarEstado(
         id: Long,
         nuevoEstado: String
     ) {
 
-        if (
-            nuevoEstado != "ACEPTADA" &&
-            nuevoEstado != "RECHAZADA"
-        ) {
+        val estadosModificables =
+            setOf(
+                "PENDIENTE",
+                "ACEPTADA",
+                "RECHAZADA"
+            )
+
+        if (nuevoEstado !in estadosModificables) {
+
+            mostrarError(
+                "Estado de cotización no válido."
+            )
+
             return
         }
 
@@ -644,30 +691,58 @@ class CotizacionViewModel(
                     return@launch
                 }
 
-                if (cotizacion.estado != "PENDIENTE") {
+                /*
+                 * Una cotización vencida no se reactiva
+                 * cambiando directamente su estado.
+                 */
+                if (cotizacion.estado == "VENCIDA") {
 
                     mostrarError(
-                        "Solo se pueden modificar cotizaciones pendientes."
+                        "Una cotización vencida no puede cambiar directamente de estado."
                     )
 
                     return@launch
                 }
 
-                if (
-                    cotizacion.fechaVigencia != null &&
-                    cotizacion.fechaVigencia <
-                    System.currentTimeMillis()
-                ) {
+                /*
+                 * Buscamos si está ligada a un Trabajo activo.
+                 *
+                 * CANCELADO no bloquea.
+                 */
+                val trabajoActivo =
+                    trabajoRepository
+                        .obtenerActivoPorCotizacion(
+                            cotizacion.id
+                        )
 
-                    cotizacionRepository.marcarVencidas(
-                        System.currentTimeMillis()
-                    )
+                if (trabajoActivo != null) {
 
                     mostrarError(
-                        "La cotización ya venció."
+                        "No se puede modificar la cotización porque está registrada en el trabajo ${trabajoActivo.folio}. " +
+                                "Cancela primero ese trabajo."
                     )
 
                     return@launch
+                }
+
+                /*
+                 * Si queremos volver a PENDIENTE,
+                 * la vigencia debe seguir siendo válida.
+                 */
+                if (nuevoEstado == "PENDIENTE") {
+
+                    if (
+                        cotizacion.fechaVigencia != null &&
+                        cotizacion.fechaVigencia <
+                        System.currentTimeMillis()
+                    ) {
+
+                        mostrarError(
+                            "La cotización ya venció y no puede volver a PENDIENTE."
+                        )
+
+                        return@launch
+                    }
                 }
 
                 cotizacionRepository.actualizar(

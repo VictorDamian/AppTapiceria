@@ -1,4 +1,3 @@
-
 package com.tapiceria.app.data.repository
 
 import com.tapiceria.app.data.local.dao.TrabajoDao
@@ -15,19 +14,34 @@ class TrabajoRepositoryImpl(
     private val trabajoDao: TrabajoDao
 ) : TrabajoRepository {
 
-    override suspend fun insertar(trabajo: TrabajoEntity): Long {
+    override suspend fun insertar(
+        trabajo: TrabajoEntity
+    ): Long {
         return trabajoDao.insertar(trabajo)
     }
 
-    override suspend fun actualizar(trabajo: TrabajoEntity) {
+    override suspend fun actualizar(
+        trabajo: TrabajoEntity
+    ) {
         trabajoDao.actualizar(trabajo)
     }
 
-    override suspend fun obtenerPorId(id: Long): TrabajoEntity? {
+    override suspend fun obtenerPorId(
+        id: Long
+    ): TrabajoEntity? {
         return trabajoDao.obtenerPorId(id)
     }
 
-    override fun observarTodos(): Flow<List<TrabajoListado>> {
+    override suspend fun obtenerActivoPorCotizacion(
+        cotizacionId: Long
+    ): TrabajoEntity? {
+        return trabajoDao.obtenerActivoPorCotizacion(
+            cotizacionId
+        )
+    }
+
+    override fun observarTodos():
+            Flow<List<TrabajoListado>> {
         return trabajoDao.observarTodos()
     }
 
@@ -40,6 +54,9 @@ class TrabajoRepositoryImpl(
         id: Long,
         estado: String
     ): Int {
-        return trabajoDao.actualizarEstado(id, estado)
+        return trabajoDao.actualizarEstado(
+            id,
+            estado
+        )
     }
 }

@@ -102,12 +102,19 @@ class MainActivity : ComponentActivity() {
                     )
                 )
 
-                val cotizacionViewModel: CotizacionViewModel = viewModel(
-                    factory = CotizacionViewModelFactory(
-                        container.cotizacionRepository,
-                        container.atencionRepository
+                val cotizacionViewModel: CotizacionViewModel =
+                    viewModel(
+                        factory = CotizacionViewModelFactory(
+                            cotizacionRepository =
+                                container.cotizacionRepository,
+
+                            atencionRepository =
+                                container.atencionRepository,
+
+                            trabajoRepository =
+                                container.trabajoRepository
+                        )
                     )
-                )
 
                 val trabajoViewModel: TrabajoViewModel = viewModel(
                     factory = TrabajoViewModelFactory(

@@ -1,4 +1,3 @@
-
 package com.tapiceria.app.domain.repository
 
 import com.tapiceria.app.data.local.entity.TrabajoEntity
@@ -17,10 +16,22 @@ interface TrabajoRepository {
 
     suspend fun obtenerPorId(id: Long): TrabajoEntity?
 
+    /**
+     * Obtiene el trabajo activo asociado a una cotización.
+     *
+     * Un trabajo CANCELADO no bloquea la cotización.
+     */
+    suspend fun obtenerActivoPorCotizacion(
+        cotizacionId: Long
+    ): TrabajoEntity?
+
     fun observarTodos(): Flow<List<TrabajoListado>>
 
     fun observarCotizacionesAceptadas():
             Flow<List<CotizacionTrabajoOpcion>>
 
-    suspend fun actualizarEstado(id: Long, estado: String): Int
+    suspend fun actualizarEstado(
+        id: Long,
+        estado: String
+    ): Int
 }

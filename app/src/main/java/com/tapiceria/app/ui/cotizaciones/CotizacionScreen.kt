@@ -37,6 +37,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tapiceria.app.domain.model.AtencionListado
 import com.tapiceria.app.domain.model.CotizacionListado
 import java.text.SimpleDateFormat
@@ -183,6 +184,12 @@ fun CotizacionScreen(
                         viewModel.cambiarEstado(
                             cotizacion.id,
                             "RECHAZADA"
+                        )
+                    },
+                    onPendiente = {
+                        viewModel.cambiarEstado(
+                            cotizacion.id,
+                            "PENDIENTE"
                         )
                     }
                 )
@@ -591,7 +598,8 @@ private fun CotizacionItem(
     cotizacion: CotizacionListado,
     onEditar: () -> Unit,
     onAceptar: () -> Unit,
-    onRechazar: () -> Unit
+    onRechazar: () -> Unit,
+    onPendiente: () -> Unit
 ) {
 
     val importe =
@@ -653,12 +661,17 @@ private fun CotizacionItem(
                     fontWeight = FontWeight.Bold
                 )
 
-                /**
-                 * Solo se permite editar una cotización
-                 * mientras permanezca pendiente.
-                 */
+                /*
+ * Las cotizaciones PENDIENTE, ACEPTADA y RECHAZADA
+ * pueden editarse.
+ *
+ * El ViewModel realizará la validación adicional
+ * para saber si la cotización está ligada a un Trabajo activo.
+ */
                 if (
-                    cotizacion.estado == "PENDIENTE"
+                    cotizacion.estado == "PENDIENTE" ||
+                    cotizacion.estado == "ACEPTADA" ||
+                    cotizacion.estado == "RECHAZADA"
                 ) {
 
                     TextButton(
@@ -775,33 +788,78 @@ private fun CotizacionItem(
              * Las acciones de aceptar/rechazar solamente
              * aparecen cuando sigue pendiente.
              */
-            if (
-                cotizacion.estado == "PENDIENTE"
-            ) {
+            HorizontalDivider()
 
-                HorizontalDivider()
+            when (cotizacion.estado) {
 
-                Row(
-                    modifier =
-                        Modifier.fillMaxWidth(),
-                    horizontalArrangement =
-                        Arrangement.spacedBy(8.dp)
-                ) {
+                "PENDIENTE" -> {
 
-                    Button(
-                        onClick = onAceptar,
-                        modifier =
-                            Modifier.weight(1f)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement =
+                            Arrangement.spacedBy(8.dp)
                     ) {
-                        Text("Aceptar")
+
+                        Button(
+                            onClick = onAceptar,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Aceptar")
+                        }
+
+                        OutlinedButton(
+                            onClick = onRechazar,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Rechazar")
+                        }
                     }
+                }
 
-                    OutlinedButton(
-                        onClick = onRechazar,
-                        modifier =
-                            Modifier.weight(1f)
+                "ACEPTADA" -> {
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement =
+                            Arrangement.spacedBy(8.dp)
                     ) {
-                        Text("Rechazar")
+
+                        OutlinedButton(
+                            onClick = onRechazar,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Rechazar")
+                        }
+
+                        OutlinedButton(
+                            onClick = onPendiente,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Pendiente")
+                        }
+                    }
+                }
+
+                "RECHAZADA" -> {
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement =
+                            Arrangement.spacedBy(8.dp)
+                    ) {
+
+                        Button(
+                            onClick = onAceptar,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Aceptar")
+                        }
+                        OutlinedButton(
+                            onClick = onPendiente,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Pendiente")
+                        }
                     }
                 }
             }
