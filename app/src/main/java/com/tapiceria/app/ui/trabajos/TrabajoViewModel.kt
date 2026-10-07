@@ -495,16 +495,39 @@ class TrabajoViewModel(
         }
 
         /*
-         * La cotización aceptada determina el importe inicial
-         * del trabajo.
+         * Para un trabajo nuevo, el importe inicial proviene
+         * de la cotización aceptada.
+         *
+         * Para una edición, utilizamos el importe capturado
+         * en el formulario para permitir modificarlo.
          */
-        val importeCentavos =
-            cotizacion.importeCentavos
+        val importeCentavos: Long
+
+        if (estado.trabajoEditandoId == null) {
+
+            // Alta: el importe inicial viene de la cotización.
+            importeCentavos = cotizacion.importeCentavos
+
+        } else {
+
+            // Edición: el usuario puede modificar el importe.
+            importeCentavos =
+                convertirImporteCentavos(
+                    estado.importe
+                ) ?: run {
+
+                    mostrarError(
+                        "Ingresa un importe válido."
+                    )
+
+                    return
+                }
+        }
 
         if (importeCentavos <= 0L) {
 
             mostrarError(
-                "El importe de la cotización debe ser mayor que cero."
+                "El importe debe ser mayor que cero."
             )
 
             return

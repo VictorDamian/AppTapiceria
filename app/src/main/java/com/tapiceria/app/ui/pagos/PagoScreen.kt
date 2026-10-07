@@ -59,6 +59,11 @@ fun PagoScreen(viewModel: PagoViewModel) {
         it.id == estado.trabajoSeleccionadoId
     }
 
+    // Un trabajo cancelado conserva su historial,
+    // pero no permite capturar nuevos pagos.
+    val trabajoCancelado =
+        trabajoSeleccionado?.estado == "CANCELADO"
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -148,6 +153,28 @@ fun PagoScreen(viewModel: PagoViewModel) {
             }
         }
 
+        if (trabajoCancelado) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor =
+                        MaterialTheme.colorScheme.errorContainer
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text(
+                    text = "Este trabajo está cancelado. " +
+                            "Los pagos históricos se conservan, " +
+                            "pero no se pueden registrar nuevos pagos.",
+                    modifier = Modifier.padding(12.dp),
+                    color =
+                        MaterialTheme.colorScheme.onErrorContainer,
+                    style =
+                        MaterialTheme.typography.bodyMedium
+                )
+            }
+        }
+
         Text(
             text = "Registrar pago",
             style = MaterialTheme.typography.titleLarge,
@@ -163,7 +190,9 @@ fun PagoScreen(viewModel: PagoViewModel) {
                 keyboardType = KeyboardType.Decimal
             ),
             singleLine = true,
-            enabled = trabajoSeleccionado != null && !estado.guardando
+            enabled = trabajoSeleccionado != null &&
+                    !trabajoCancelado &&
+                    !estado.guardando
         )
 
         // Selector del método de pago.
@@ -200,7 +229,7 @@ fun PagoScreen(viewModel: PagoViewModel) {
             label = { Text("Referencia (opcional)") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
-            enabled = !estado.guardando
+            enabled = !trabajoCancelado && !estado.guardando
         )
 
         OutlinedTextField(
@@ -208,7 +237,7 @@ fun PagoScreen(viewModel: PagoViewModel) {
             onValueChange = viewModel::cambiarNotas,
             label = { Text("Notas (opcional)") },
             modifier = Modifier.fillMaxWidth(),
-            enabled = !estado.guardando,
+            enabled = !trabajoCancelado && !estado.guardando,
             minLines = 2
         )
 
@@ -217,6 +246,7 @@ fun PagoScreen(viewModel: PagoViewModel) {
             modifier = Modifier.fillMaxWidth(),
             enabled = trabajoSeleccionado != null &&
                     !estado.guardando &&
+                    !trabajoCancelado &&
                     estado.saldoPendienteCentavos > 0L
         ) {
             Text(if (estado.guardando) "Guardando..." else "Registrar pago")

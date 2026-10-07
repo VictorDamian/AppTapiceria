@@ -1011,7 +1011,10 @@ private fun FormularioTrabajo(
                 },
                 enabled =
                     !guardando &&
-                            cotizacionSeleccionada == null,
+                            (
+                                    cotizacionSeleccionada == null ||
+                                            trabajoEditandoId != null
+                                    ),
                 singleLine = true,
                 shape =
                     RoundedCornerShape(12.dp)
