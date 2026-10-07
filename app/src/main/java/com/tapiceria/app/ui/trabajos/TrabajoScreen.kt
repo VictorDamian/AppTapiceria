@@ -19,10 +19,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
@@ -30,8 +33,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -50,20 +51,90 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.tapiceria.app.data.local.entity.ClienteEntity
 import com.tapiceria.app.domain.model.CotizacionTrabajoOpcion
+import com.tapiceria.app.domain.model.TrabajoListado
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import com.tapiceria.app.domain.model.*
 
+/**
+ * Pantalla principal de trabajos.
+ *
+ * Permite:
+ * - Registrar trabajos.
+ * - Buscar clientes.
+ * - Buscar cotizaciones.
+ * - Editar trabajos.
+ * - Cambiar estados.
+ * - Recuperar trabajos cancelados.
+ */
 @Composable
-fun TrabajoScreen(viewModel: TrabajoViewModel) {
+fun TrabajoScreen(
+    viewModel: TrabajoViewModel
+) {
     val estado by viewModel.uiState.collectAsState()
+
+    /*
+     * Filtramos los clientes únicamente para la presentación.
+     * La fuente original permanece en el ViewModel.
+     */
+    val clientesFiltrados = remember(
+        estado.clientes,
+        estado.textoBusquedaCliente
+    ) {
+        val texto = estado.textoBusquedaCliente.trim()
+
+        if (texto.isBlank()) {
+            estado.clientes.take(10)
+        } else {
+            estado.clientes
+                .filter {
+                    it.nombre.contains(
+                        texto,
+                        ignoreCase = true
+                    )
+                }
+                .take(10)
+        }
+    }
+
+    /*
+     * Filtramos las cotizaciones únicamente para presentación.
+     */
+    val cotizacionesCliente = remember(
+        estado.cotizaciones,
+        estado.clienteSeleccionadoId,
+        estado.textoBusquedaCotizacion
+    ) {
+        val texto = estado.textoBusquedaCotizacion.trim()
+
+        estado.cotizaciones
+            .filter {
+                it.clienteId ==
+                        estado.clienteSeleccionadoId
+            }
+            .filter {
+                texto.isBlank() ||
+                        it.folio.contains(
+                            texto,
+                            ignoreCase = true
+                        ) ||
+                        it.descripcion.contains(
+                            texto,
+                            ignoreCase = true
+                        )
+            }
+            .take(10)
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .verticalScroll(rememberScrollState())
+            .background(
+                MaterialTheme.colorScheme.background
+            )
+            .verticalScroll(
+                rememberScrollState()
+            )
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
@@ -77,10 +148,18 @@ fun TrabajoScreen(viewModel: TrabajoViewModel) {
             verticalAlignment = Alignment.CenterVertically
         ) {
 
+            Icon(
+                imageVector = Icons.Default.Build,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary
+            )
 
-            Spacer(modifier = Modifier.width(10.dp))
+            Spacer(
+                modifier = Modifier.width(10.dp)
+            )
 
             Column {
+
                 Text(
                     text = "Trabajos",
                     style = MaterialTheme.typography.headlineMedium,
@@ -104,33 +183,40 @@ fun TrabajoScreen(viewModel: TrabajoViewModel) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer
+                    containerColor =
+                        MaterialTheme.colorScheme.errorContainer
                 ),
                 shape = RoundedCornerShape(12.dp)
             ) {
+
                 Row(
                     modifier = Modifier.padding(14.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+
                     Icon(
                         imageVector = Icons.Default.Warning,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.error
                     )
 
-                    Spacer(modifier = Modifier.width(10.dp))
+                    Spacer(
+                        modifier = Modifier.width(10.dp)
+                    )
 
                     Text(
                         text = mensaje,
-                        color = MaterialTheme.colorScheme.onErrorContainer,
-                        style = MaterialTheme.typography.bodyMedium
+                        color =
+                            MaterialTheme.colorScheme.onErrorContainer,
+                        style =
+                            MaterialTheme.typography.bodyMedium
                     )
                 }
             }
         }
 
         // ============================================================
-        // MENSAJE DE ÉXITO
+        // MENSAJE DE ÉXITO / INFORMACIÓN
         // ============================================================
 
         estado.mensaje?.let { mensaje ->
@@ -138,26 +224,33 @@ fun TrabajoScreen(viewModel: TrabajoViewModel) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                    containerColor =
+                        MaterialTheme.colorScheme.primaryContainer
                 ),
                 shape = RoundedCornerShape(12.dp)
             ) {
+
                 Row(
                     modifier = Modifier.padding(14.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+
                     Icon(
                         imageVector = Icons.Default.CheckCircle,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary
                     )
 
-                    Spacer(modifier = Modifier.width(10.dp))
+                    Spacer(
+                        modifier = Modifier.width(10.dp)
+                    )
 
                     Text(
                         text = mensaje,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        style = MaterialTheme.typography.bodyMedium
+                        color =
+                            MaterialTheme.colorScheme.onPrimaryContainer,
+                        style =
+                            MaterialTheme.typography.bodyMedium
                     )
                 }
             }
@@ -168,41 +261,74 @@ fun TrabajoScreen(viewModel: TrabajoViewModel) {
         // ============================================================
 
         FormularioTrabajo(
-            clientes = estado.clientes,
-            cotizaciones = estado.cotizaciones,
-            clienteSeleccionadoId = estado.clienteSeleccionadoId,
-            cotizacionSeleccionadaId = estado.cotizacionSeleccionadaId,
-            descripcion = estado.descripcion,
-            importe = estado.importe,
-            fechaEntrega = estado.fechaEntregaEstimada,
-            notas = estado.notas,
-            guardando = estado.guardando,
-            onSeleccionarCliente = viewModel::seleccionarCliente,
-            onSeleccionarCotizacion = viewModel::seleccionarCotizacion,
-            onDescripcionChange = viewModel::cambiarDescripcion,
-            onImporteChange = viewModel::cambiarImporte,
-            onFechaEntregaChange = viewModel::cambiarFechaEntrega,
-            onNotasChange = viewModel::cambiarNotas,
-            onGuardar = viewModel::guardarTrabajo
+            clientes = clientesFiltrados,
+            cotizaciones = cotizacionesCliente,
+            todosLosClientes = estado.clientes,
+            clienteSeleccionadoId =
+                estado.clienteSeleccionadoId,
+            cotizacionSeleccionadaId =
+                estado.cotizacionSeleccionadaId,
+            textoBusquedaCliente =
+                estado.textoBusquedaCliente,
+            textoBusquedaCotizacion =
+                estado.textoBusquedaCotizacion,
+            trabajoEditandoId =
+                estado.trabajoEditandoId,
+            descripcion =
+                estado.descripcion,
+            importe =
+                estado.importe,
+            fechaEntrega =
+                estado.fechaEntregaEstimada,
+            notas =
+                estado.notas,
+            guardando =
+                estado.guardando,
+            onBusquedaClienteChange =
+                viewModel::cambiarBusquedaCliente,
+            onBusquedaCotizacionChange =
+                viewModel::cambiarBusquedaCotizacion,
+            onSeleccionarCliente =
+                viewModel::seleccionarCliente,
+            onSeleccionarCotizacion =
+                viewModel::seleccionarCotizacion,
+            onDescripcionChange =
+                viewModel::cambiarDescripcion,
+            onImporteChange =
+                viewModel::cambiarImporte,
+            onFechaEntregaChange =
+                viewModel::cambiarFechaEntrega,
+            onNotasChange =
+                viewModel::cambiarNotas,
+            onGuardar =
+                viewModel::guardarTrabajo,
+            onCancelarEdicion =
+                viewModel::cancelarEdicion
         )
 
         // ============================================================
-        // ENCABEZADO DE SEGUIMIENTO
+        // SEGUIMIENTO
         // ============================================================
 
         Column(
-            verticalArrangement = Arrangement.spacedBy(2.dp)
+            verticalArrangement =
+                Arrangement.spacedBy(2.dp)
         ) {
+
             Text(
                 text = "Seguimiento de trabajos",
-                style = MaterialTheme.typography.titleLarge,
+                style =
+                    MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
 
             Text(
-                text = "Consulta el estado y las fechas de cada trabajo",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                text =
+                    "Consulta el estado y las fechas de cada trabajo",
+                style =
+                    MaterialTheme.typography.bodyMedium,
+                color =
+                    MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
@@ -213,11 +339,13 @@ fun TrabajoScreen(viewModel: TrabajoViewModel) {
         when {
 
             estado.cargando -> {
+
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 30.dp),
-                    contentAlignment = Alignment.Center
+                    contentAlignment =
+                        Alignment.Center
                 ) {
                     CircularProgressIndicator()
                 }
@@ -226,29 +354,44 @@ fun TrabajoScreen(viewModel: TrabajoViewModel) {
             estado.trabajos.isEmpty() -> {
 
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    ),
-                    shape = RoundedCornerShape(16.dp)
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    colors =
+                        CardDefaults.cardColors(
+                            containerColor =
+                                MaterialTheme.colorScheme.surface
+                        ),
+                    shape =
+                        RoundedCornerShape(16.dp)
                 ) {
+
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(28.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalAlignment =
+                            Alignment.CenterHorizontally,
+                        verticalArrangement =
+                            Arrangement.spacedBy(8.dp)
                     ) {
+
                         Icon(
-                            imageVector = Icons.Default.Build,
+                            imageVector =
+                                Icons.Default.Build,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            tint =
+                                MaterialTheme.colorScheme
+                                    .onSurfaceVariant
                         )
 
                         Text(
-                            text = "Todavía no hay trabajos registrados.",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text =
+                                "Todavía no hay trabajos registrados.",
+                            style =
+                                MaterialTheme.typography.bodyLarge,
+                            color =
+                                MaterialTheme.colorScheme
+                                    .onSurfaceVariant
                         )
                     }
                 }
@@ -259,9 +402,11 @@ fun TrabajoScreen(viewModel: TrabajoViewModel) {
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(440.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                        .height(500.dp),
+                    verticalArrangement =
+                        Arrangement.spacedBy(12.dp)
                 ) {
+
                     items(
                         items = estado.trabajos,
                         key = { it.id }
@@ -269,6 +414,13 @@ fun TrabajoScreen(viewModel: TrabajoViewModel) {
 
                         TrabajoItem(
                             trabajo = trabajo,
+
+                            onEditar = {
+                                viewModel.editarTrabajo(
+                                    trabajo.id
+                                )
+                            },
+
                             onCambiarEstado = { nuevoEstado ->
                                 viewModel.cambiarEstado(
                                     trabajo.id,
@@ -283,86 +435,116 @@ fun TrabajoScreen(viewModel: TrabajoViewModel) {
     }
 }
 
+/**
+ * Formulario para crear o editar un trabajo.
+ */
 @Composable
 private fun FormularioTrabajo(
     clientes: List<ClienteEntity>,
     cotizaciones: List<CotizacionTrabajoOpcion>,
+    todosLosClientes: List<ClienteEntity>,
     clienteSeleccionadoId: Long?,
     cotizacionSeleccionadaId: Long?,
+    textoBusquedaCliente: String,
+    textoBusquedaCotizacion: String,
+    trabajoEditandoId: Long?,
     descripcion: String,
     importe: String,
     fechaEntrega: String,
     notas: String,
     guardando: Boolean,
+    onBusquedaClienteChange: (String) -> Unit,
+    onBusquedaCotizacionChange: (String) -> Unit,
     onSeleccionarCliente: (Long) -> Unit,
     onSeleccionarCotizacion: (Long?) -> Unit,
     onDescripcionChange: (String) -> Unit,
     onImporteChange: (String) -> Unit,
     onFechaEntregaChange: (String) -> Unit,
     onNotasChange: (String) -> Unit,
-    onGuardar: () -> Unit
+    onGuardar: () -> Unit,
+    onCancelarEdicion: () -> Unit
 ) {
-    var menuClientes by remember { mutableStateOf(false) }
-    var menuCotizaciones by remember { mutableStateOf(false) }
 
-    // Cliente actualmente seleccionado.
-    val cliente = clientes.firstOrNull {
-        it.id == clienteSeleccionadoId
-    }
+    val clienteSeleccionado =
+        todosLosClientes.firstOrNull {
+            it.id == clienteSeleccionadoId
+        }
 
-    // Solo mostramos las cotizaciones correspondientes
-    // al cliente actualmente seleccionado.
-    val cotizacionesCliente = cotizaciones.filter {
-        it.clienteId == clienteSeleccionadoId
-    }
-
-    // Cotización actualmente seleccionada.
-    val cotizacion = cotizacionesCliente.firstOrNull {
-        it.id == cotizacionSeleccionadaId
-    }
+    val cotizacionSeleccionada =
+        cotizaciones.firstOrNull {
+            it.id == cotizacionSeleccionadaId
+        }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor =
+                MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 2.dp
-        )
+        elevation =
+            CardDefaults.cardElevation(
+                defaultElevation = 2.dp
+            )
     ) {
 
         Column(
             modifier = Modifier.padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement =
+                Arrangement.spacedBy(12.dp)
         ) {
 
             // --------------------------------------------------------
-            // ENCABEZADO DEL FORMULARIO
+            // ENCABEZADO
             // --------------------------------------------------------
 
             Row(
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment =
+                    Alignment.CenterVertically
             ) {
+
                 Icon(
-                    imageVector = Icons.Default.Build,
+                    imageVector =
+                        if (trabajoEditandoId == null) {
+                            Icons.Default.Build
+                        } else {
+                            Icons.Default.Edit
+                        },
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
+                    tint =
+                        MaterialTheme.colorScheme.primary
                 )
 
-                Spacer(modifier = Modifier.width(10.dp))
+                Spacer(
+                    modifier = Modifier.width(10.dp)
+                )
 
                 Column {
+
                     Text(
-                        text = "Registrar trabajo",
-                        style = MaterialTheme.typography.titleMedium,
+                        text =
+                            if (trabajoEditandoId == null) {
+                                "Registrar trabajo"
+                            } else {
+                                "Editar trabajo"
+                            },
+                        style =
+                            MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
 
                     Text(
-                        text = "Captura los datos del nuevo trabajo",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text =
+                            if (trabajoEditandoId == null) {
+                                "Captura los datos del nuevo trabajo"
+                            } else {
+                                "Modifica los datos del trabajo existente"
+                            },
+                        style =
+                            MaterialTheme.typography.bodySmall,
+                        color =
+                            MaterialTheme.colorScheme
+                                .onSurfaceVariant
                     )
                 }
             }
@@ -375,48 +557,183 @@ private fun FormularioTrabajo(
 
             Text(
                 text = "Cliente",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                style =
+                    MaterialTheme.typography.labelLarge,
+                color =
+                    MaterialTheme.colorScheme
+                        .onSurfaceVariant
             )
 
-            Box {
-                OutlinedButton(
-                    onClick = { menuClientes = true },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = clientes.isNotEmpty() && !guardando,
-                    shape = RoundedCornerShape(12.dp)
-                ) {
+            OutlinedTextField(
+                value = textoBusquedaCliente,
+                onValueChange =
+                    onBusquedaClienteChange,
+                modifier =
+                    Modifier.fillMaxWidth(),
+                label = {
+                    Text("Buscar cliente")
+                },
+                placeholder = {
+                    Text("Nombre del cliente")
+                },
+                leadingIcon = {
                     Icon(
-                        imageVector = Icons.Default.Person,
+                        imageVector =
+                            Icons.Default.Search,
                         contentDescription = null
                     )
+                },
+                singleLine = true,
+                enabled = !guardando,
+                shape =
+                    RoundedCornerShape(12.dp)
+            )
 
-                    Spacer(modifier = Modifier.width(8.dp))
+            clienteSeleccionado?.let { cliente ->
 
-                    Text(
-                        text = cliente?.nombre ?: "Seleccionar cliente"
-                    )
-                }
-
-                DropdownMenu(
-                    expanded = menuClientes,
-                    onDismissRequest = {
-                        menuClientes = false
-                    }
+                Card(
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    colors =
+                        CardDefaults.cardColors(
+                            containerColor =
+                                MaterialTheme.colorScheme
+                                    .primaryContainer
+                        ),
+                    shape =
+                        RoundedCornerShape(10.dp)
                 ) {
-                    clientes.forEach { item ->
 
-                        DropdownMenuItem(
-                            text = {
-                                Text(item.nombre)
-                            },
-                            onClick = {
-                                onSeleccionarCliente(item.id)
-                                menuClientes = false
-                            }
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        verticalAlignment =
+                            Alignment.CenterVertically
+                    ) {
+
+                        Icon(
+                            imageVector =
+                                Icons.Default.Person,
+                            contentDescription = null,
+                            tint =
+                                MaterialTheme.colorScheme
+                                    .primary
                         )
+
+                        Spacer(
+                            modifier =
+                                Modifier.width(8.dp)
+                        )
+
+                        Column(
+                            modifier =
+                                Modifier.weight(1f)
+                        ) {
+
+                            Text(
+                                text = "Cliente seleccionado",
+                                style =
+                                    MaterialTheme.typography
+                                        .labelSmall
+                            )
+
+                            Text(
+                                text = cliente.nombre,
+                                fontWeight =
+                                    FontWeight.SemiBold
+                            )
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                onBusquedaClienteChange("")
+                            },
+                            enabled = !guardando
+                        ) {
+                            Text("Cambiar")
+                        }
                     }
                 }
+            }
+
+            /*
+             * Resultados de búsqueda.
+             *
+             * Solamente se muestran cuando el usuario está
+             * buscando un cliente.
+             */
+            if (
+                textoBusquedaCliente.isNotBlank() &&
+                clientes.isNotEmpty()
+            ) {
+
+                Card(
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    shape =
+                        RoundedCornerShape(10.dp)
+                ) {
+
+                    Column {
+
+                        clientes.forEach { cliente ->
+
+                            OutlinedButton(
+                                onClick = {
+                                    onSeleccionarCliente(
+                                        cliente.id
+                                    )
+                                    onBusquedaClienteChange(
+                                        ""
+                                    )
+                                },
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .padding(
+                                            horizontal = 4.dp,
+                                            vertical = 2.dp
+                                        ),
+                                enabled = !guardando
+                            ) {
+
+                                Icon(
+                                    imageVector =
+                                        Icons.Default.Person,
+                                    contentDescription = null
+                                )
+
+                                Spacer(
+                                    modifier =
+                                        Modifier.width(8.dp)
+                                )
+
+                                Text(
+                                    text = cliente.nombre,
+                                    modifier =
+                                        Modifier.weight(1f)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (
+                textoBusquedaCliente.isNotBlank() &&
+                clientes.isEmpty()
+            ) {
+
+                Text(
+                    text =
+                        "No se encontraron clientes.",
+                    style =
+                        MaterialTheme.typography.bodySmall,
+                    color =
+                        MaterialTheme.colorScheme
+                            .onSurfaceVariant
+                )
             }
 
             // --------------------------------------------------------
@@ -425,63 +742,210 @@ private fun FormularioTrabajo(
 
             Text(
                 text = "Cotización",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                style =
+                    MaterialTheme.typography.labelLarge,
+                color =
+                    MaterialTheme.colorScheme
+                        .onSurfaceVariant
             )
 
-            Box {
-                OutlinedButton(
-                    onClick = { menuCotizaciones = true },
-                    modifier = Modifier.fillMaxWidth(),
+            if (clienteSeleccionado == null) {
+
+                Text(
+                    text =
+                        "Selecciona primero un cliente.",
+                    style =
+                        MaterialTheme.typography.bodySmall,
+                    color =
+                        MaterialTheme.colorScheme
+                            .onSurfaceVariant
+                )
+
+            } else {
+
+                OutlinedTextField(
+                    value =
+                        textoBusquedaCotizacion,
+                    onValueChange =
+                        onBusquedaCotizacionChange,
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    label = {
+                        Text(
+                            "Buscar cotización"
+                        )
+                    },
+                    placeholder = {
+                        Text(
+                            "Folio o descripción"
+                        )
+                    },
+                    leadingIcon = {
+                        Icon(
+                            imageVector =
+                                Icons.Default.Search,
+                            contentDescription = null
+                        )
+                    },
+                    singleLine = true,
                     enabled = !guardando,
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text(
-                        text = cotizacion?.let {
-                            "${it.folio} - ${it.descripcion}"
-                        } ?: "Sin cotización / seleccionar"
-                    )
+                    shape =
+                        RoundedCornerShape(12.dp)
+                )
+
+                cotizacionSeleccionada?.let {
+
+                    Card(
+                        modifier =
+                            Modifier.fillMaxWidth(),
+                        colors =
+                            CardDefaults.cardColors(
+                                containerColor =
+                                    MaterialTheme.colorScheme
+                                        .secondaryContainer
+                            ),
+                        shape =
+                            RoundedCornerShape(10.dp)
+                    ) {
+
+                        Column(
+                            modifier =
+                                Modifier.padding(12.dp)
+                        ) {
+
+                            Text(
+                                text =
+                                    "Cotización seleccionada",
+                                style =
+                                    MaterialTheme.typography
+                                        .labelSmall
+                            )
+
+                            Text(
+                                text =
+                                    it.folio,
+                                fontWeight =
+                                    FontWeight.Bold
+                            )
+
+                            Text(
+                                text =
+                                    it.descripcion,
+                                style =
+                                    MaterialTheme.typography
+                                        .bodySmall
+                            )
+
+                            Text(
+                                text =
+                                    "Importe: ${
+                                        formatoMoneda(
+                                            it.importeCentavos
+                                        )
+                                    }",
+                                style =
+                                    MaterialTheme.typography
+                                        .bodySmall
+                            )
+
+                            OutlinedButton(
+                                onClick = {
+                                    onSeleccionarCotizacion(
+                                        null
+                                    )
+                                    onBusquedaCotizacionChange(
+                                        ""
+                                    )
+                                },
+                                enabled = !guardando
+                            ) {
+                                Text(
+                                    "Quitar cotización"
+                                )
+                            }
+                        }
+                    }
                 }
 
-                DropdownMenu(
-                    expanded = menuCotizaciones,
-                    onDismissRequest = {
-                        menuCotizaciones = false
-                    }
+                if (
+                    textoBusquedaCotizacion.isNotBlank() &&
+                    cotizaciones.isNotEmpty()
                 ) {
 
-                    DropdownMenuItem(
-                        text = {
-                            Text("Sin cotización")
-                        },
-                        onClick = {
-                            onSeleccionarCotizacion(null)
-                            menuCotizaciones = false
-                        }
-                    )
+                    Card(
+                        modifier =
+                            Modifier.fillMaxWidth(),
+                        shape =
+                            RoundedCornerShape(10.dp)
+                    ) {
 
-                    cotizacionesCliente.forEach { item ->
+                        Column {
 
-                        DropdownMenuItem(
-                            text = {
-                                Column {
-                                    Text(
-                                        text = item.folio,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
+                            cotizaciones.forEach { cotizacion ->
 
-                                    Text(
-                                        text = item.descripcion,
-                                        style = MaterialTheme.typography.bodySmall
-                                    )
+                                OutlinedButton(
+                                    onClick = {
+
+                                        onSeleccionarCotizacion(
+                                            cotizacion.id
+                                        )
+
+                                        onBusquedaCotizacionChange(
+                                            ""
+                                        )
+                                    },
+                                    modifier =
+                                        Modifier
+                                            .fillMaxWidth()
+                                            .padding(
+                                                horizontal = 4.dp,
+                                                vertical = 2.dp
+                                            ),
+                                    enabled = !guardando
+                                ) {
+
+                                    Column(
+                                        modifier =
+                                            Modifier.weight(1f),
+                                        horizontalAlignment =
+                                            Alignment.Start
+                                    ) {
+
+                                        Text(
+                                            text =
+                                                cotizacion.folio,
+                                            fontWeight =
+                                                FontWeight.SemiBold
+                                        )
+
+                                        Text(
+                                            text =
+                                                cotizacion.descripcion,
+                                            style =
+                                                MaterialTheme.typography
+                                                    .bodySmall
+                                        )
+                                    }
                                 }
-                            },
-                            onClick = {
-                                onSeleccionarCotizacion(item.id)
-                                menuCotizaciones = false
                             }
-                        )
+                        }
                     }
+                }
+
+                if (
+                    textoBusquedaCotizacion.isNotBlank() &&
+                    cotizaciones.isEmpty()
+                ) {
+
+                    Text(
+                        text =
+                            "No se encontraron cotizaciones aceptadas.",
+                        style =
+                            MaterialTheme.typography.bodySmall,
+                        color =
+                            MaterialTheme.colorScheme
+                                .onSurfaceVariant
+                    )
                 }
             }
 
@@ -491,18 +955,25 @@ private fun FormularioTrabajo(
 
             OutlinedTextField(
                 value = descripcion,
-                onValueChange = onDescripcionChange,
-                modifier = Modifier.fillMaxWidth(),
+                onValueChange =
+                    onDescripcionChange,
+                modifier =
+                    Modifier.fillMaxWidth(),
                 label = {
-                    Text("Descripción del trabajo")
+                    Text(
+                        "Descripción del trabajo"
+                    )
                 },
                 placeholder = {
-                    Text("Ej. Retapizado de sala de tres piezas")
+                    Text(
+                        "Ej. Retapizado de sala de tres piezas"
+                    )
                 },
                 minLines = 2,
                 maxLines = 4,
                 enabled = !guardando,
-                shape = RoundedCornerShape(12.dp)
+                shape =
+                    RoundedCornerShape(12.dp)
             )
 
             // --------------------------------------------------------
@@ -511,11 +982,15 @@ private fun FormularioTrabajo(
 
             OutlinedTextField(
                 value = importe,
-                onValueChange = onImporteChange,
-                modifier = Modifier.fillMaxWidth(),
+                onValueChange =
+                    onImporteChange,
+                modifier =
+                    Modifier.fillMaxWidth(),
                 label = {
                     Text(
-                        if (cotizacion != null) {
+                        if (
+                            cotizacionSeleccionada != null
+                        ) {
                             "Importe de la cotización (MXN)"
                         } else {
                             "Importe acordado (MXN)"
@@ -525,36 +1000,56 @@ private fun FormularioTrabajo(
                 placeholder = {
                     Text("Ej. 2500.00")
                 },
-                enabled = !guardando && cotizacion == null,
+                enabled =
+                    !guardando &&
+                            cotizacionSeleccionada == null,
                 singleLine = true,
-                shape = RoundedCornerShape(12.dp)
+                shape =
+                    RoundedCornerShape(12.dp)
             )
 
-            // Cuando existe una cotización seleccionada,
-            // mostramos la explicación sin modificar la lógica.
-            if (cotizacion != null) {
+            if (
+                cotizacionSeleccionada != null
+            ) {
 
                 Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer
-                    ),
-                    shape = RoundedCornerShape(10.dp)
+                    colors =
+                        CardDefaults.cardColors(
+                            containerColor =
+                                MaterialTheme.colorScheme
+                                    .secondaryContainer
+                        ),
+                    shape =
+                        RoundedCornerShape(10.dp)
                 ) {
+
                     Row(
-                        modifier = Modifier.padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        modifier =
+                            Modifier.padding(12.dp),
+                        verticalAlignment =
+                            Alignment.CenterVertically
                     ) {
+
                         Icon(
-                            imageVector = Icons.Default.CheckCircle,
+                            imageVector =
+                                Icons.Default.CheckCircle,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.secondary
+                            tint =
+                                MaterialTheme.colorScheme
+                                    .secondary
                         )
 
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(
+                            modifier =
+                                Modifier.width(8.dp)
+                        )
 
                         Text(
-                            text = "El importe se tomará de la cotización aceptada.",
-                            style = MaterialTheme.typography.bodySmall
+                            text =
+                                "El importe se toma de la cotización aceptada.",
+                            style =
+                                MaterialTheme.typography
+                                    .bodySmall
                         )
                     }
                 }
@@ -566,17 +1061,29 @@ private fun FormularioTrabajo(
 
             OutlinedTextField(
                 value = fechaEntrega,
-                onValueChange = onFechaEntregaChange,
-                modifier = Modifier.fillMaxWidth(),
+                onValueChange =
+                    onFechaEntregaChange,
+                modifier =
+                    Modifier.fillMaxWidth(),
                 label = {
-                    Text("Entrega estimada (opcional)")
+                    Text(
+                        "Entrega estimada (opcional)"
+                    )
                 },
                 placeholder = {
                     Text("AAAA-MM-DD")
                 },
+                leadingIcon = {
+                    Icon(
+                        imageVector =
+                            Icons.Default.Event,
+                        contentDescription = null
+                    )
+                },
                 singleLine = true,
                 enabled = !guardando,
-                shape = RoundedCornerShape(12.dp)
+                shape =
+                    RoundedCornerShape(12.dp)
             )
 
             // --------------------------------------------------------
@@ -585,103 +1092,191 @@ private fun FormularioTrabajo(
 
             OutlinedTextField(
                 value = notas,
-                onValueChange = onNotasChange,
-                modifier = Modifier.fillMaxWidth(),
+                onValueChange =
+                    onNotasChange,
+                modifier =
+                    Modifier.fillMaxWidth(),
                 label = {
                     Text("Notas (opcional)")
                 },
                 minLines = 2,
                 maxLines = 4,
                 enabled = !guardando,
-                shape = RoundedCornerShape(12.dp)
+                shape =
+                    RoundedCornerShape(12.dp)
             )
 
             // --------------------------------------------------------
-            // BOTÓN GUARDAR
+            // ACCIONES DEL FORMULARIO
             // --------------------------------------------------------
 
-            Button(
-                onClick = onGuardar,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                enabled = !guardando && clientes.isNotEmpty(),
-                shape = RoundedCornerShape(12.dp)
+            Row(
+                modifier =
+                    Modifier.fillMaxWidth(),
+                horizontalArrangement =
+                    Arrangement.spacedBy(8.dp)
             ) {
 
-                if (guardando) {
+                if (
+                    trabajoEditandoId != null
+                ) {
 
-                    CircularProgressIndicator(
-                        modifier = Modifier
-                            .width(20.dp)
-                            .height(20.dp),
-                        strokeWidth = 2.dp
-                    )
+                    OutlinedButton(
+                        onClick =
+                            onCancelarEdicion,
+                        modifier =
+                            Modifier.weight(1f),
+                        enabled = !guardando,
+                        shape =
+                            RoundedCornerShape(12.dp)
+                    ) {
 
-                    Spacer(
-                        modifier = Modifier.width(8.dp)
-                    )
+                        Icon(
+                            imageVector =
+                                Icons.Default.Close,
+                            contentDescription = null
+                        )
 
-                    Text("Guardando...")
+                        Spacer(
+                            modifier =
+                                Modifier.width(6.dp)
+                        )
 
-                } else {
+                        Text("Cancelar")
+                    }
+                }
 
-                    Icon(
-                        imageVector = Icons.Default.Save,
-                        contentDescription = null
-                    )
+                Button(
+                    onClick = onGuardar,
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .height(52.dp),
+                    enabled =
+                        !guardando &&
+                                clientes.isNotEmpty(),
+                    shape =
+                        RoundedCornerShape(12.dp)
+                ) {
 
-                    Spacer(
-                        modifier = Modifier.width(8.dp)
-                    )
+                    if (guardando) {
 
-                    Text("Registrar trabajo")
+                        CircularProgressIndicator(
+                            modifier =
+                                Modifier
+                                    .width(20.dp)
+                                    .height(20.dp),
+                            strokeWidth = 2.dp
+                        )
+
+                        Spacer(
+                            modifier =
+                                Modifier.width(8.dp)
+                        )
+
+                        Text("Guardando...")
+
+                    } else {
+
+                        Icon(
+                            imageVector =
+                                if (
+                                    trabajoEditandoId == null
+                                ) {
+                                    Icons.Default.Save
+                                } else {
+                                    Icons.Default.Edit
+                                },
+                            contentDescription = null
+                        )
+
+                        Spacer(
+                            modifier =
+                                Modifier.width(8.dp)
+                        )
+
+                        Text(
+                            if (
+                                trabajoEditandoId == null
+                            ) {
+                                "Registrar trabajo"
+                            } else {
+                                "Guardar cambios"
+                            }
+                        )
+                    }
                 }
             }
         }
     }
 }
 
+/**
+ * Tarjeta individual de un trabajo.
+ */
 @Composable
 private fun TrabajoItem(
     trabajo: TrabajoListado,
+    onEditar: () -> Unit,
     onCambiarEstado: (String) -> Unit
 ) {
+
     // Formateamos el importe únicamente para presentación.
-    // La información original y su tipo permanecen sin cambios.
-    val importe = remember(trabajo.importeCentavos) {
-        String.format(
-            Locale("es", "MX"),
-            "$%,.2f",
-            trabajo.importeCentavos / 100.0
+    val importe = remember(
+        trabajo.importeCentavos
+    ) {
+        formatoMoneda(
+            trabajo.importeCentavos
         )
     }
 
-    // Color visual asociado al estado.
-    // No modifica el estado real del trabajo.
-    val colorEstado = when (trabajo.estado) {
-        "PENDIENTE" -> MaterialTheme.colorScheme.secondary
-        "EN_PROCESO" -> MaterialTheme.colorScheme.primary
-        "TERMINADO" -> MaterialTheme.colorScheme.tertiary
-        "ENTREGADO" -> MaterialTheme.colorScheme.primary
-        "CANCELADO" -> MaterialTheme.colorScheme.error
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
-    }
+    /*
+     * Define únicamente la apariencia visual del estado.
+     */
+    val colorEstado =
+        when (trabajo.estado) {
+
+            "PENDIENTE" ->
+                MaterialTheme.colorScheme.secondary
+
+            "EN_PROCESO" ->
+                MaterialTheme.colorScheme.primary
+
+            "TERMINADO" ->
+                MaterialTheme.colorScheme.tertiary
+
+            "ENTREGADO" ->
+                MaterialTheme.colorScheme.primary
+
+            "CANCELADO" ->
+                MaterialTheme.colorScheme.error
+
+            else ->
+                MaterialTheme.colorScheme
+                    .onSurfaceVariant
+        }
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 2.dp
-        )
+        modifier =
+            Modifier.fillMaxWidth(),
+        shape =
+            RoundedCornerShape(16.dp),
+        colors =
+            CardDefaults.cardColors(
+                containerColor =
+                    MaterialTheme.colorScheme.surface
+            ),
+        elevation =
+            CardDefaults.cardElevation(
+                defaultElevation = 2.dp
+            )
     ) {
 
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            modifier =
+                Modifier.padding(16.dp),
+            verticalArrangement =
+                Arrangement.spacedBy(8.dp)
         ) {
 
             // --------------------------------------------------------
@@ -689,41 +1284,66 @@ private fun TrabajoItem(
             // --------------------------------------------------------
 
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+                modifier =
+                    Modifier.fillMaxWidth(),
+                verticalAlignment =
+                    Alignment.CenterVertically
             ) {
 
                 Column(
-                    modifier = Modifier.weight(1f)
+                    modifier =
+                        Modifier.weight(1f)
                 ) {
+
                     Text(
-                        text = trabajo.folio,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        text =
+                            trabajo.folio,
+                        style =
+                            MaterialTheme.typography
+                                .titleMedium,
+                        fontWeight =
+                            FontWeight.Bold
                     )
 
                     Text(
-                        text = trabajo.nombreCliente,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text =
+                            trabajo.nombreCliente,
+                        style =
+                            MaterialTheme.typography
+                                .bodyMedium,
+                        color =
+                            MaterialTheme.colorScheme
+                                .onSurfaceVariant
                     )
                 }
 
                 Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = colorEstado.copy(alpha = 0.12f)
-                    ),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text(
-                        text = trabajo.estado,
-                        modifier = Modifier.padding(
-                            horizontal = 10.dp,
-                            vertical = 6.dp
+                    colors =
+                        CardDefaults.cardColors(
+                            containerColor =
+                                colorEstado.copy(
+                                    alpha = 0.12f
+                                )
                         ),
-                        color = colorEstado,
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold
+                    shape =
+                        RoundedCornerShape(8.dp)
+                ) {
+
+                    Text(
+                        text =
+                            trabajo.estado,
+                        modifier =
+                            Modifier.padding(
+                                horizontal = 10.dp,
+                                vertical = 6.dp
+                            ),
+                        color =
+                            colorEstado,
+                        style =
+                            MaterialTheme.typography
+                                .labelMedium,
+                        fontWeight =
+                            FontWeight.Bold
                     )
                 }
             }
@@ -735,8 +1355,10 @@ private fun TrabajoItem(
             // --------------------------------------------------------
 
             Text(
-                text = trabajo.descripcion,
-                style = MaterialTheme.typography.bodyLarge
+                text =
+                    trabajo.descripcion,
+                style =
+                    MaterialTheme.typography.bodyLarge
             )
 
             // --------------------------------------------------------
@@ -744,77 +1366,161 @@ private fun TrabajoItem(
             // --------------------------------------------------------
 
             Text(
-                text = "Importe: $importe MXN",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold
+                text =
+                    "Importe: $importe",
+                style =
+                    MaterialTheme.typography.titleSmall,
+                fontWeight =
+                    FontWeight.SemiBold
             )
 
             // --------------------------------------------------------
-            // FECHAS
+            // FECHA DE RECEPCIÓN
             // --------------------------------------------------------
 
             Row(
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment =
+                    Alignment.CenterVertically
             ) {
+
                 Icon(
-                    imageVector = Icons.Default.Event,
+                    imageVector =
+                        Icons.Default.Event,
                     contentDescription = null,
-                    modifier = Modifier.width(20.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    modifier =
+                        Modifier.width(20.dp),
+                    tint =
+                        MaterialTheme.colorScheme
+                            .onSurfaceVariant
                 )
 
-                Spacer(modifier = Modifier.width(6.dp))
+                Spacer(
+                    modifier =
+                        Modifier.width(6.dp)
+                )
 
                 Text(
-                    text = "Recepción: ${formatearFecha(trabajo.fechaRecepcion)}",
-                    style = MaterialTheme.typography.bodySmall
+                    text =
+                        "Recepción: ${
+                            formatearFecha(
+                                trabajo.fechaRecepcion
+                            )
+                        }",
+                    style =
+                        MaterialTheme.typography
+                            .bodySmall
                 )
             }
+
+            // --------------------------------------------------------
+            // ENTREGA ESTIMADA
+            // --------------------------------------------------------
 
             trabajo.fechaEntregaEstimada?.let {
 
                 Row(
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalAlignment =
+                        Alignment.CenterVertically
                 ) {
+
                     Icon(
-                        imageVector = Icons.Default.Schedule,
+                        imageVector =
+                            Icons.Default.Schedule,
                         contentDescription = null,
-                        modifier = Modifier.width(20.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        modifier =
+                            Modifier.width(20.dp),
+                        tint =
+                            MaterialTheme.colorScheme
+                                .onSurfaceVariant
                     )
 
-                    Spacer(modifier = Modifier.width(6.dp))
+                    Spacer(
+                        modifier =
+                            Modifier.width(6.dp)
+                    )
 
                     Text(
-                        text = "Entrega estimada: ${formatearFecha(it)}",
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
-            }
-
-            trabajo.fechaEntregaReal?.let {
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.CheckCircle,
-                        contentDescription = null,
-                        modifier = Modifier.width(20.dp),
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-
-                    Spacer(modifier = Modifier.width(6.dp))
-
-                    Text(
-                        text = "Entregado: ${formatearFecha(it)}",
-                        style = MaterialTheme.typography.bodySmall
+                        text =
+                            "Entrega estimada: ${
+                                formatearFecha(it)
+                            }",
+                        style =
+                            MaterialTheme.typography
+                                .bodySmall
                     )
                 }
             }
 
             // --------------------------------------------------------
-            // ACCIONES
+            // ENTREGA REAL
+            // --------------------------------------------------------
+
+            trabajo.fechaEntregaReal?.let {
+
+                Row(
+                    verticalAlignment =
+                        Alignment.CenterVertically
+                ) {
+
+                    Icon(
+                        imageVector =
+                            Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        modifier =
+                            Modifier.width(20.dp),
+                        tint =
+                            MaterialTheme.colorScheme
+                                .primary
+                    )
+
+                    Spacer(
+                        modifier =
+                            Modifier.width(6.dp)
+                    )
+
+                    Text(
+                        text =
+                            "Entregado: ${
+                                formatearFecha(it)
+                            }",
+                        style =
+                            MaterialTheme.typography
+                                .bodySmall
+                    )
+                }
+            }
+
+            // --------------------------------------------------------
+            // BOTÓN EDITAR
+            // --------------------------------------------------------
+
+            if (trabajo.estado != "ENTREGADO") {
+
+                OutlinedButton(
+                    onClick = onEditar,
+                    modifier =
+                        Modifier.fillMaxWidth(),
+                    shape =
+                        RoundedCornerShape(10.dp)
+                ) {
+
+                    Icon(
+                        imageVector =
+                            Icons.Default.Edit,
+                        contentDescription = null
+                    )
+
+                    Spacer(
+                        modifier =
+                            Modifier.width(8.dp)
+                    )
+
+                    Text("Editar trabajo")
+                }
+            }
+
+            // --------------------------------------------------------
+            // ESTADOS
             // --------------------------------------------------------
 
             when (trabajo.estado) {
@@ -823,17 +1529,26 @@ private fun TrabajoItem(
 
                     Button(
                         onClick = {
-                            onCambiarEstado("EN_PROCESO")
+                            onCambiarEstado(
+                                "EN_PROCESO"
+                            )
                         },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(10.dp)
+                        modifier =
+                            Modifier.fillMaxWidth(),
+                        shape =
+                            RoundedCornerShape(10.dp)
                     ) {
+
                         Icon(
-                            imageVector = Icons.Default.PlayArrow,
+                            imageVector =
+                                Icons.Default.PlayArrow,
                             contentDescription = null
                         )
 
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(
+                            modifier =
+                                Modifier.width(8.dp)
+                        )
 
                         Text("Iniciar trabajo")
                     }
@@ -842,37 +1557,58 @@ private fun TrabajoItem(
                 "EN_PROCESO" -> {
 
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        modifier =
+                            Modifier.fillMaxWidth(),
+                        horizontalArrangement =
+                            Arrangement.spacedBy(8.dp)
                     ) {
 
                         Button(
                             onClick = {
-                                onCambiarEstado("TERMINADO")
+                                onCambiarEstado(
+                                    "TERMINADO"
+                                )
                             },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(10.dp)
+                            modifier =
+                                Modifier.weight(1f),
+                            shape =
+                                RoundedCornerShape(10.dp)
                         ) {
+
                             Icon(
-                                imageVector = Icons.Default.CheckCircle,
+                                imageVector =
+                                    Icons.Default.CheckCircle,
                                 contentDescription = null
                             )
 
-                            Spacer(modifier = Modifier.width(6.dp))
+                            Spacer(
+                                modifier =
+                                    Modifier.width(6.dp)
+                            )
 
                             Text("Terminado")
                         }
 
                         OutlinedButton(
                             onClick = {
-                                onCambiarEstado("CANCELADO")
+                                onCambiarEstado(
+                                    "CANCELADO"
+                                )
                             },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(10.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = MaterialTheme.colorScheme.error
-                            )
+                            modifier =
+                                Modifier.weight(1f),
+                            shape =
+                                RoundedCornerShape(10.dp),
+                            colors =
+                                ButtonDefaults
+                                    .outlinedButtonColors(
+                                        contentColor =
+                                            MaterialTheme
+                                                .colorScheme
+                                                .error
+                                    )
                         ) {
+
                             Text("Cancelar")
                         }
                     }
@@ -882,20 +1618,140 @@ private fun TrabajoItem(
 
                     Button(
                         onClick = {
-                            onCambiarEstado("ENTREGADO")
+                            onCambiarEstado(
+                                "ENTREGADO"
+                            )
                         },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(10.dp)
+                        modifier =
+                            Modifier.fillMaxWidth(),
+                        shape =
+                            RoundedCornerShape(10.dp)
                     ) {
+
                         Icon(
-                            imageVector = Icons.Default.CheckCircle,
+                            imageVector =
+                                Icons.Default.CheckCircle,
                             contentDescription = null
                         )
 
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(
+                            modifier =
+                                Modifier.width(8.dp)
+                        )
 
                         Text("Registrar entrega")
                     }
+
+                    OutlinedButton(
+                        onClick = {
+                            onCambiarEstado(
+                                "CANCELADO"
+                            )
+                        },
+                        modifier =
+                            Modifier.fillMaxWidth(),
+                        shape =
+                            RoundedCornerShape(10.dp),
+                        colors =
+                            ButtonDefaults
+                                .outlinedButtonColors(
+                                    contentColor =
+                                        MaterialTheme
+                                            .colorScheme
+                                            .error
+                                )
+                    ) {
+
+                        Text("Cancelar trabajo")
+                    }
+                }
+
+                "CANCELADO" -> {
+
+                    /*
+                     * Un cancelado puede volver al flujo normal.
+                     * Esto no modifica ni elimina sus pagos.
+                     */
+                    Text(
+                        text =
+                            "Este trabajo está cancelado. " +
+                                    "Puedes reactivarlo.",
+                        style =
+                            MaterialTheme.typography
+                                .bodySmall,
+                        color =
+                            MaterialTheme.colorScheme.error
+                    )
+
+                    Row(
+                        modifier =
+                            Modifier.fillMaxWidth(),
+                        horizontalArrangement =
+                            Arrangement.spacedBy(8.dp)
+                    ) {
+
+                        OutlinedButton(
+                            onClick = {
+                                onCambiarEstado(
+                                    "PENDIENTE"
+                                )
+                            },
+                            modifier =
+                                Modifier.weight(1f),
+                            shape =
+                                RoundedCornerShape(10.dp)
+                        ) {
+
+                            Text("Pendiente")
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                onCambiarEstado(
+                                    "EN_PROCESO"
+                                )
+                            },
+                            modifier =
+                                Modifier.weight(1f),
+                            shape =
+                                RoundedCornerShape(10.dp)
+                        ) {
+
+                            Text("En proceso")
+                        }
+                    }
+
+                    OutlinedButton(
+                        onClick = {
+                            onCambiarEstado(
+                                "TERMINADO"
+                            )
+                        },
+                        modifier =
+                            Modifier.fillMaxWidth(),
+                        shape =
+                            RoundedCornerShape(10.dp)
+                    ) {
+
+                        Text(
+                            "Marcar como terminado"
+                        )
+                    }
+                }
+
+                "ENTREGADO" -> {
+
+                    Text(
+                        text =
+                            "Trabajo entregado. " +
+                                    "El estado es definitivo.",
+                        style =
+                            MaterialTheme.typography
+                                .bodySmall,
+                        color =
+                            MaterialTheme.colorScheme
+                                .primary
+                    )
                 }
             }
         }
@@ -903,12 +1759,30 @@ private fun TrabajoItem(
 }
 
 /**
- * Convierte una fecha almacenada como timestamp a un formato
- * amigable para mostrar al usuario.
+ * Formatea una fecha almacenada como timestamp.
  */
-private fun formatearFecha(fecha: Long): String {
+private fun formatearFecha(
+    fecha: Long
+): String {
+
     return SimpleDateFormat(
         "dd/MM/yyyy",
         Locale.getDefault()
-    ).format(Date(fecha))
+    ).format(
+        Date(fecha)
+    )
+}
+
+/**
+ * Formatea centavos como moneda mexicana.
+ */
+private fun formatoMoneda(
+    centavos: Long
+): String {
+
+    return String.format(
+        Locale("es", "MX"),
+        "$%,.2f MXN",
+        centavos / 100.0
+    )
 }
