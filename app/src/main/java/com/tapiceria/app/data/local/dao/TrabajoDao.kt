@@ -19,9 +19,22 @@ interface TrabajoDao {
     suspend fun actualizar(trabajo: TrabajoEntity)
 
     @Query("""
-        SELECT *
-        FROM trabajos
-        WHERE id = :id
+        SELECT 
+        t.id,
+        t.clienteId,
+        t.estado,
+        t.descripcion,
+        t.fechaEntregaEstimada,
+        t.fechaEntregaReal,
+        t.fechaRecepcion,
+        t.folio,
+        t.notas,
+        c.importeCentavos,
+        t.cotizacionId
+        FROM trabajos t
+        INNER JOIN cotizaciones c 
+        ON t.cotizacionId = c.id
+        WHERE t.id = :id
         LIMIT 1
     """)
     suspend fun obtenerPorId(id: Long): TrabajoEntity?
@@ -54,7 +67,7 @@ interface TrabajoDao {
             t.folio AS folio,
             c.nombre AS nombreCliente,
             t.descripcion AS descripcion,
-            t.importeCentavos AS importeCentavos,
+            co.importeCentavos AS importeCentavos,
             t.fechaRecepcion AS fechaRecepcion,
             t.fechaEntregaEstimada AS fechaEntregaEstimada,
             t.fechaEntregaReal AS fechaEntregaReal,
@@ -63,6 +76,8 @@ interface TrabajoDao {
         FROM trabajos t
         INNER JOIN clientes c
             ON c.id = t.clienteId
+        INNER JOIN cotizaciones co 
+            ON co.id = t.cotizacionId
         ORDER BY t.fechaRecepcion DESC
     """)
     fun observarTodos(): Flow<List<TrabajoListado>>

@@ -37,12 +37,15 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tapiceria.app.domain.model.AtencionListado
 import com.tapiceria.app.domain.model.CotizacionListado
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 
 /**
  * Pantalla de administración de cotizaciones.
@@ -127,7 +130,7 @@ fun CotizacionScreen(
                 onGuardar =
                     viewModel::guardarCotizacion,
                 onCancelarEdicion =
-                    viewModel::cancelarEdicion
+                    viewModel::cancelarEdicion,
             )
         }
 
@@ -225,6 +228,10 @@ private fun FormularioCotizacion(
         mutableStateOf(false)
     }
 
+    var autocompleteExpandido by remember {
+        mutableStateOf(false)
+    }
+
     /**
      * Una atención sin cliente no puede generar cotización,
      * por lo tanto no se muestra como opción.
@@ -291,20 +298,122 @@ private fun FormularioCotizacion(
             /**
              * Buscador de solicitudes.
              */
-            OutlinedTextField(
-                value = textoBusqueda,
-                onValueChange =
-                    onBusquedaChange,
-                modifier = Modifier.fillMaxWidth(),
-                label = {
-                    Text("Buscar solicitud")
-                },
-                placeholder = {
-                    Text("Cliente o descripción")
-                },
-                singleLine = true,
-                enabled = !guardando
-            )
+            /**
+             * Autocomplete para buscar solicitudes.
+             *
+             * Solo se muestran los primeros resultados coincidentes
+             * para evitar listas enormes en pantalla.
+             */
+            ExposedDropdownMenuBox(
+                expanded = autocompleteExpandido,
+                onExpandedChange = {
+                    if (!guardando) {
+                        autocompleteExpandido = !autocompleteExpandido
+                    }
+                }
+            ) {
+
+                OutlinedTextField(
+                    value = textoBusqueda,
+
+                    onValueChange = { texto ->
+
+                        onBusquedaChange(texto)
+
+                        /*
+                         * Al escribir mostramos inmediatamente
+                         * los resultados disponibles.
+                         */
+                        autocompleteExpandido = true
+                    },
+
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor(),
+
+                    label = {
+                        Text("Buscar solicitud")
+                    },
+
+                    placeholder = {
+                        Text("Cliente o descripción")
+                    },
+
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(
+                            expanded = autocompleteExpandido
+                        )
+                    },
+
+                    singleLine = true,
+
+                    enabled = !guardando
+                )
+
+                ExposedDropdownMenu(
+                    expanded = autocompleteExpandido,
+                    onDismissRequest = {
+                        autocompleteExpandido = false
+                    }
+                ) {
+
+                    if (atencionesFiltradas.isEmpty()) {
+
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    "No se encontraron solicitudes."
+                                )
+                            },
+                            onClick = {
+                                autocompleteExpandido = false
+                            }
+                        )
+
+                    } else {
+
+                        atencionesFiltradas.forEach { atencion ->
+
+                            DropdownMenuItem(
+                                text = {
+
+                                    Column {
+
+                                        Text(
+                                            text =
+                                                atencion.nombreCliente,
+                                            fontWeight =
+                                                FontWeight.Medium
+                                        )
+
+                                        Text(
+                                            text =
+                                                atencion.descripcion,
+                                            style =
+                                                MaterialTheme.typography.bodySmall
+                                        )
+                                    }
+                                },
+
+                                onClick = {
+
+                                    onSeleccionarAtencion(
+                                        atencion.id
+                                    )
+
+                                    /*
+                                     * Después de seleccionar limpiamos
+                                     * el texto de búsqueda.
+                                     */
+                                    onBusquedaChange("")
+
+                                    autocompleteExpandido = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
 
             /**
              * Atención seleccionada.
@@ -351,43 +460,6 @@ private fun FormularioCotizacion(
                 }
             }
 
-            /**
-             * Resultados de búsqueda.
-             */
-            atencionesFiltradas.forEach { atencion ->
-
-                OutlinedButton(
-                    onClick = {
-                        onSeleccionarAtencion(
-                            atencion.id
-                        )
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !guardando
-                ) {
-
-                    Column(
-                        modifier =
-                            Modifier.fillMaxWidth()
-                    ) {
-
-                        Text(
-                            text =
-                                atencion.nombreCliente,
-                            fontWeight =
-                                FontWeight.Medium
-                        )
-
-                        Text(
-                            text =
-                                atencion.descripcion,
-                            style =
-                                MaterialTheme.typography
-                                    .bodySmall
-                        )
-                    }
-                }
-            }
 
             if (
                 atencionesDisponibles.isEmpty()
@@ -869,6 +941,9 @@ private fun CotizacionItem(
 
 /**
  * Convierte un texto yyyy-MM-dd a milisegundos.
+ *
+ * Se utiliza UTC porque DatePicker trabaja la fecha seleccionada
+ * como medianoche UTC.
  */
 private fun convertirTextoAFecha(
     valor: String
@@ -885,15 +960,20 @@ private fun convertirTextoAFecha(
             Locale.ROOT
         ).apply {
             isLenient = false
+            timeZone = TimeZone.getTimeZone("UTC")
         }.parse(valor)?.time
 
     } catch (_: Exception) {
+
         null
     }
 }
 
 /**
- * Convierte milisegundos a yyyy-MM-dd.
+ * Convierte milisegundos del DatePicker a yyyy-MM-dd.
+ *
+ * Se utiliza UTC para evitar que la zona horaria local
+ * convierta, por ejemplo, el día 10 en el día 9.
  */
 private fun convertirFechaATexto(
     fecha: Long
@@ -902,7 +982,11 @@ private fun convertirFechaATexto(
     return SimpleDateFormat(
         "yyyy-MM-dd",
         Locale.ROOT
-    ).format(Date(fecha))
+    ).apply {
+        timeZone = TimeZone.getTimeZone("UTC")
+    }.format(
+        Date(fecha)
+    )
 }
 
 /**

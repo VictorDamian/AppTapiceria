@@ -70,4 +70,27 @@ interface ClienteDao {
 
     @Query("UPDATE clientes SET activo = 1 WHERE id = :id")
     suspend fun activar(id: Long)
+
+    /**
+     * Determina si el cliente tiene alguna cotización que impide
+     * realizar una baja lógica.
+     *
+     * RECHAZADA y CANCELADA no bloquean la baja.
+     *
+     * Cualquier otro estado, incluyendo PENDIENTE, ACEPTADA
+     * y VENCIDA, mantiene bloqueado al cliente.
+     */
+    @Query("""
+        SELECT EXISTS(
+            SELECT 1
+            FROM cotizaciones co
+            INNER JOIN atenciones a
+                ON a.id = co.atencionId
+            WHERE a.clienteId = :clienteId
+              AND co.estado NOT IN ('RECHAZADA', 'CANCELADA')
+        )
+    """)
+    suspend fun tieneCotizacionesBloqueantes(
+        clienteId: Long
+    ): Boolean
 }

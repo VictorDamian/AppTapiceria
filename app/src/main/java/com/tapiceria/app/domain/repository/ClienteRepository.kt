@@ -37,4 +37,12 @@ interface ClienteRepository {
     suspend fun desactivar(id: Long)
 
     suspend fun activar(id: Long)
+
+    /**
+     * Indica si el cliente tiene cotizaciones que impiden
+     * realizar una baja lógica.
+     */
+    suspend fun tieneCotizacionesBloqueantes(
+        clienteId: Long
+    ): Boolean
 }

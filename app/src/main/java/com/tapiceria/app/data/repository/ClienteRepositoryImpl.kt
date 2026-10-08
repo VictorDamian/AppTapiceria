@@ -48,4 +48,14 @@ class ClienteRepositoryImpl(
     override suspend fun activar(id: Long) {
         clienteDao.activar(id)
     }
+
+    /**
+     * Consulta si existen cotizaciones que todavía mantienen
+     * al cliente en uso dentro del flujo comercial.
+     */
+    override suspend fun tieneCotizacionesBloqueantes(
+        clienteId: Long
+    ): Boolean {
+        return clienteDao.tieneCotizacionesBloqueantes(clienteId)
+    }
 }

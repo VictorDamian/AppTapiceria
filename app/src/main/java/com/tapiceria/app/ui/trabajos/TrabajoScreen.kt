@@ -60,6 +60,10 @@ import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import java.util.TimeZone
 
 /**
  * Pantalla principal de trabajos.
@@ -299,8 +303,6 @@ fun TrabajoScreen(
                 viewModel::seleccionarCotizacion,
             onDescripcionChange =
                 viewModel::cambiarDescripcion,
-            onImporteChange =
-                viewModel::cambiarImporte,
             onFechaEntregaChange =
                 viewModel::cambiarFechaEntrega,
             onNotasChange =
@@ -464,7 +466,6 @@ private fun FormularioTrabajo(
     onSeleccionarCliente: (Long) -> Unit,
     onSeleccionarCotizacion: (Long?) -> Unit,
     onDescripcionChange: (String) -> Unit,
-    onImporteChange: (String) -> Unit,
     onFechaEntregaChange: (String) -> Unit,
     onNotasChange: (String) -> Unit,
     onGuardar: () -> Unit,
@@ -483,6 +484,14 @@ private fun FormularioTrabajo(
         cotizaciones.firstOrNull {
             it.id == cotizacionSeleccionadaId
         }
+
+    var autocompleteClienteExpandido by remember {
+        mutableStateOf(false)
+    }
+
+    var autocompleteCotizacionExpandido by remember {
+        mutableStateOf(false)
+    }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -573,30 +582,125 @@ private fun FormularioTrabajo(
                         .onSurfaceVariant
             )
 
-            OutlinedTextField(
-                value = textoBusquedaCliente,
-                onValueChange =
-                    onBusquedaClienteChange,
-                modifier =
-                    Modifier.fillMaxWidth(),
-                label = {
-                    Text("Buscar cliente")
-                },
-                placeholder = {
-                    Text("Nombre del cliente")
-                },
-                leadingIcon = {
-                    Icon(
-                        imageVector =
-                            Icons.Default.Search,
-                        contentDescription = null
-                    )
-                },
-                singleLine = true,
-                enabled = !guardando,
-                shape =
-                    RoundedCornerShape(12.dp)
-            )
+            /**
+             * Autocomplete de clientes.
+             *
+             * Permite escribir el nombre y seleccionar directamente
+             * uno de los resultados encontrados.
+             */
+            ExposedDropdownMenuBox(
+                expanded = autocompleteClienteExpandido,
+                onExpandedChange = {
+                    if (!guardando) {
+                        autocompleteClienteExpandido =
+                            !autocompleteClienteExpandido
+                    }
+                }
+            ) {
+
+                OutlinedTextField(
+                    value = textoBusquedaCliente,
+
+                    onValueChange = { texto ->
+
+                        onBusquedaClienteChange(texto)
+
+                        autocompleteClienteExpandido = true
+                    },
+
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor(),
+
+                    label = {
+                        Text("Buscar cliente")
+                    },
+
+                    placeholder = {
+                        Text("Nombre del cliente")
+                    },
+
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = null
+                        )
+                    },
+
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(
+                            expanded =
+                                autocompleteClienteExpandido
+                        )
+                    },
+
+                    singleLine = true,
+
+                    enabled = !guardando,
+
+                    shape = RoundedCornerShape(12.dp)
+                )
+
+                ExposedDropdownMenu(
+                    expanded = autocompleteClienteExpandido,
+                    onDismissRequest = {
+                        autocompleteClienteExpandido = false
+                    }
+                ) {
+
+                    if (clientes.isEmpty()) {
+
+                        DropdownMenuItem(
+                            text = {
+                                Text("No se encontraron clientes.")
+                            },
+                            onClick = {
+                                autocompleteClienteExpandido = false
+                            }
+                        )
+
+                    } else {
+
+                        clientes.forEach { cliente ->
+
+                            DropdownMenuItem(
+                                text = {
+
+                                    Column {
+
+                                        Text(
+                                            text = cliente.nombre,
+                                            fontWeight =
+                                                FontWeight.Medium
+                                        )
+
+                                        if (cliente.telefono.isNotBlank()) {
+
+                                            Text(
+                                                text = cliente.telefono,
+                                                style =
+                                                    MaterialTheme.typography
+                                                        .bodySmall
+                                            )
+                                        }
+                                    }
+                                },
+
+                                onClick = {
+
+                                    onSeleccionarCliente(
+                                        cliente.id
+                                    )
+
+                                    onBusquedaClienteChange("")
+
+                                    autocompleteClienteExpandido = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
 
             clienteSeleccionado?.let { cliente ->
 
@@ -652,15 +756,6 @@ private fun FormularioTrabajo(
                                 fontWeight =
                                     FontWeight.SemiBold
                             )
-                        }
-
-                        OutlinedButton(
-                            onClick = {
-                                onBusquedaClienteChange("")
-                            },
-                            enabled = !guardando
-                        ) {
-                            Text("Cambiar")
                         }
                     }
                 }
@@ -991,318 +1086,302 @@ private fun FormularioTrabajo(
 
             OutlinedTextField(
                 value = importe,
-                onValueChange =
-                    onImporteChange,
+                onValueChange = {
+                    // El importe es solamente informativo.
+                    // No se permite modificarlo desde Trabajos.
+                },
                 modifier =
                     Modifier.fillMaxWidth(),
                 label = {
-                    Text(
-                        if (
-                            cotizacionSeleccionada != null
-                        ) {
-                            "Importe de la cotización (MXN)"
-                        } else {
-                            "Importe acordado (MXN)"
-                        }
-                    )
+                    Text("Importe de la cotización (MXN)")
                 },
-                placeholder = {
-                    Text("Ej. 2500.00")
-                },
-                enabled =
-                    !guardando &&
-                            (
-                                    cotizacionSeleccionada == null ||
-                                            trabajoEditandoId != null
-                                    ),
                 singleLine = true,
-                shape =
-                    RoundedCornerShape(12.dp)
-            )
 
-            if (
-                cotizacionSeleccionada != null
+                readOnly = true,
+
+                enabled = !guardando,
+
+                shape = RoundedCornerShape(12.dp)
+            )
+            Card(
+                colors =
+                    CardDefaults.cardColors(
+                        containerColor =
+                            MaterialTheme.colorScheme
+                                .secondaryContainer
+                    ),
+                shape =
+                    RoundedCornerShape(10.dp)
             ) {
 
-                Card(
-                    colors =
-                        CardDefaults.cardColors(
-                            containerColor =
-                                MaterialTheme.colorScheme
-                                    .secondaryContainer
-                        ),
-                    shape =
-                        RoundedCornerShape(10.dp)
+                Row(
+                    modifier =
+                        Modifier.padding(12.dp),
+                    verticalAlignment =
+                        Alignment.CenterVertically
                 ) {
 
-                    Row(
+                    Icon(
+                        imageVector =
+                            Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        tint =
+                            MaterialTheme.colorScheme
+                                .secondary
+                    )
+
+                    Spacer(
                         modifier =
-                            Modifier.padding(12.dp),
-                        verticalAlignment =
-                            Alignment.CenterVertically
-                    ) {
+                            Modifier.width(8.dp)
+                    )
 
-                        Icon(
-                            imageVector =
-                                Icons.Default.CheckCircle,
-                            contentDescription = null,
-                            tint =
-                                MaterialTheme.colorScheme
-                                    .secondary
-                        )
-
-                        Spacer(
-                            modifier =
-                                Modifier.width(8.dp)
-                        )
-
-                        Text(
-                            text =
-                                "El importe se toma de la cotización aceptada.",
-                            style =
-                                MaterialTheme.typography
-                                    .bodySmall
-                        )
-                    }
+                    Text(
+                        text =
+                            "El importe pertenece a la cotización. " +
+                                    "Para modificarlo debes editar la cotización.",
+                        style =
+                            MaterialTheme.typography
+                                .bodySmall
+                    )
                 }
             }
+        }
 
-            // --------------------------------------------------------
-            // FECHA DE ENTREGA
-            // --------------------------------------------------------
+        // --------------------------------------------------------
+        // FECHA DE ENTREGA
+        // --------------------------------------------------------
+
+        Text(
+            text = "Fecha de entrega",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        OutlinedButton(
+            onClick = {
+                mostrarCalendario = true
+            },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = !guardando,
+            shape = RoundedCornerShape(12.dp)
+        ) {
+
+            Icon(
+                imageVector = Icons.Default.Event,
+                contentDescription = null
+            )
+
+            Spacer(
+                modifier = Modifier.width(8.dp)
+            )
 
             Text(
-                text = "Fecha de entrega",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            OutlinedButton(
-                onClick = {
-                    mostrarCalendario = true
-                },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = !guardando,
-                shape = RoundedCornerShape(12.dp)
-            ) {
-
-                Icon(
-                    imageVector = Icons.Default.Event,
-                    contentDescription = null
-                )
-
-                Spacer(
-                    modifier = Modifier.width(8.dp)
-                )
-
-                Text(
-                    text =
-                        if (fechaEntrega.isBlank()) {
-                            "Seleccionar fecha de entrega"
-                        } else {
-                            "Entrega: $fechaEntrega"
-                        }
-                )
-            }
-
-            if (fechaEntrega.isNotBlank()) {
-
-                TextButton(
-                    onClick = {
-                        onFechaEntregaChange("")
-                    },
-                    enabled = !guardando,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Quitar fecha")
-                }
-            }
-
-            /**
-             * Diálogo de selección de fecha.
-             */
-            if (mostrarCalendario) {
-
-                val fechaInicial =
-                    convertirTextoAFecha(
-                        fechaEntrega
-                    )
-
-                val datePickerState =
-                    rememberDatePickerState(
-                        initialSelectedDateMillis =
-                            fechaInicial
-                    )
-
-                DatePickerDialog(
-
-                    onDismissRequest = {
-                        mostrarCalendario = false
-                    },
-
-                    confirmButton = {
-
-                        TextButton(
-                            onClick = {
-
-                                val millis =
-                                    datePickerState
-                                        .selectedDateMillis
-
-                                if (millis != null) {
-
-                                    onFechaEntregaChange(
-                                        convertirFechaATexto(
-                                            millis
-                                        )
-                                    )
-                                }
-
-                                mostrarCalendario = false
-                            }
-                        ) {
-                            Text("Aceptar")
-                        }
-                    },
-
-                    dismissButton = {
-
-                        TextButton(
-                            onClick = {
-                                mostrarCalendario = false
-                            }
-                        ) {
-                            Text("Cancelar")
-                        }
+                text =
+                    if (fechaEntrega.isBlank()) {
+                        "Seleccionar fecha de entrega"
+                    } else {
+                        "Entrega: $fechaEntrega"
                     }
-
-                ) {
-
-                    DatePicker(
-                        state = datePickerState
-                    )
-                }
-            }
-
-            // --------------------------------------------------------
-            // NOTAS
-            // --------------------------------------------------------
-
-            OutlinedTextField(
-                value = notas,
-                onValueChange =
-                    onNotasChange,
-                modifier =
-                    Modifier.fillMaxWidth(),
-                label = {
-                    Text("Notas (opcional)")
-                },
-                minLines = 2,
-                maxLines = 4,
-                enabled = !guardando,
-                shape =
-                    RoundedCornerShape(12.dp)
             )
+        }
 
-            // --------------------------------------------------------
-            // ACCIONES DEL FORMULARIO
-            // --------------------------------------------------------
+        if (fechaEntrega.isNotBlank()) {
 
-            Row(
-                modifier =
-                    Modifier.fillMaxWidth(),
-                horizontalArrangement =
-                    Arrangement.spacedBy(8.dp)
+            TextButton(
+                onClick = {
+                    onFechaEntregaChange("")
+                },
+                enabled = !guardando,
+                modifier = Modifier.fillMaxWidth()
             ) {
+                Text("Quitar fecha")
+            }
+        }
 
-                if (
-                    trabajoEditandoId != null
-                ) {
+        /**
+         * Diálogo de selección de fecha.
+         */
+        if (mostrarCalendario) {
 
-                    OutlinedButton(
-                        onClick =
-                            onCancelarEdicion,
-                        modifier =
-                            Modifier.weight(1f),
-                        enabled = !guardando,
-                        shape =
-                            RoundedCornerShape(12.dp)
+            val fechaInicial =
+                convertirTextoAFecha(
+                    fechaEntrega
+                )
+
+            val datePickerState =
+                rememberDatePickerState(
+                    initialSelectedDateMillis =
+                        fechaInicial
+                )
+
+            DatePickerDialog(
+
+                onDismissRequest = {
+                    mostrarCalendario = false
+                },
+
+                confirmButton = {
+
+                    TextButton(
+                        onClick = {
+
+                            val millis =
+                                datePickerState
+                                    .selectedDateMillis
+
+                            if (millis != null) {
+
+                                onFechaEntregaChange(
+                                    convertirFechaATexto(
+                                        millis
+                                    )
+                                )
+                            }
+
+                            mostrarCalendario = false
+                        }
                     ) {
+                        Text("Aceptar")
+                    }
+                },
 
-                        Icon(
-                            imageVector =
-                                Icons.Default.Close,
-                            contentDescription = null
-                        )
+                dismissButton = {
 
-                        Spacer(
-                            modifier =
-                                Modifier.width(6.dp)
-                        )
-
+                    TextButton(
+                        onClick = {
+                            mostrarCalendario = false
+                        }
+                    ) {
                         Text("Cancelar")
                     }
                 }
 
-                Button(
-                    onClick = onGuardar,
+            ) {
+
+                DatePicker(
+                    state = datePickerState
+                )
+            }
+        }
+
+        // --------------------------------------------------------
+        // NOTAS
+        // --------------------------------------------------------
+
+        OutlinedTextField(
+            value = notas,
+            onValueChange =
+                onNotasChange,
+            modifier =
+                Modifier.fillMaxWidth(),
+            label = {
+                Text("Notas (opcional)")
+            },
+            minLines = 2,
+            maxLines = 4,
+            enabled = !guardando,
+            shape =
+                RoundedCornerShape(12.dp)
+        )
+
+        // --------------------------------------------------------
+        // ACCIONES DEL FORMULARIO
+        // --------------------------------------------------------
+
+        Row(
+            modifier =
+                Modifier.fillMaxWidth(),
+            horizontalArrangement =
+                Arrangement.spacedBy(8.dp)
+        ) {
+
+            if (
+                trabajoEditandoId != null
+            ) {
+
+                OutlinedButton(
+                    onClick =
+                        onCancelarEdicion,
                     modifier =
-                        Modifier
-                            .weight(1f)
-                            .height(52.dp),
-                    enabled =
-                        !guardando &&
-                                clientes.isNotEmpty(),
+                        Modifier.weight(1f),
+                    enabled = !guardando,
                     shape =
                         RoundedCornerShape(12.dp)
                 ) {
 
-                    if (guardando) {
+                    Icon(
+                        imageVector =
+                            Icons.Default.Close,
+                        contentDescription = null
+                    )
 
-                        CircularProgressIndicator(
-                            modifier =
-                                Modifier
-                                    .width(20.dp)
-                                    .height(20.dp),
-                            strokeWidth = 2.dp
-                        )
+                    Spacer(
+                        modifier =
+                            Modifier.width(6.dp)
+                    )
 
-                        Spacer(
-                            modifier =
-                                Modifier.width(8.dp)
-                        )
+                    Text("Cancelar")
+                }
+            }
 
-                        Text("Guardando...")
+            Button(
+                onClick = onGuardar,
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .height(52.dp),
+                enabled =
+                    !guardando &&
+                            clientes.isNotEmpty(),
+                shape =
+                    RoundedCornerShape(12.dp)
+            ) {
 
-                    } else {
+                if (guardando) {
 
-                        Icon(
-                            imageVector =
-                                if (
-                                    trabajoEditandoId == null
-                                ) {
-                                    Icons.Default.Save
-                                } else {
-                                    Icons.Default.Edit
-                                },
-                            contentDescription = null
-                        )
+                    CircularProgressIndicator(
+                        modifier =
+                            Modifier
+                                .width(20.dp)
+                                .height(20.dp),
+                        strokeWidth = 2.dp
+                    )
 
-                        Spacer(
-                            modifier =
-                                Modifier.width(8.dp)
-                        )
+                    Spacer(
+                        modifier =
+                            Modifier.width(8.dp)
+                    )
 
-                        Text(
+                    Text("Guardando...")
+
+                } else {
+
+                    Icon(
+                        imageVector =
                             if (
                                 trabajoEditandoId == null
                             ) {
-                                "Registrar trabajo"
+                                Icons.Default.Save
                             } else {
-                                "Guardar cambios"
-                            }
-                        )
-                    }
+                                Icons.Default.Edit
+                            },
+                        contentDescription = null
+                    )
+
+                    Spacer(
+                        modifier =
+                            Modifier.width(8.dp)
+                    )
+
+                    Text(
+                        if (
+                            trabajoEditandoId == null
+                        ) {
+                            "Registrar trabajo"
+                        } else {
+                            "Guardar cambios"
+                        }
+                    )
                 }
             }
         }
@@ -1884,8 +1963,12 @@ private fun formatoMoneda(
         centavos / 100.0
     )
 }
+
 /**
- * Convierte una fecha AAAA-MM-DD a milisegundos.
+ * Convierte un texto yyyy-MM-dd a milisegundos.
+ *
+ * Se utiliza UTC porque DatePicker trabaja la fecha seleccionada
+ * como medianoche UTC.
  */
 private fun convertirTextoAFecha(
     valor: String
@@ -1902,6 +1985,7 @@ private fun convertirTextoAFecha(
             Locale.ROOT
         ).apply {
             isLenient = false
+            timeZone = TimeZone.getTimeZone("UTC")
         }.parse(valor)?.time
 
     } catch (_: Exception) {
@@ -1911,7 +1995,10 @@ private fun convertirTextoAFecha(
 }
 
 /**
- * Convierte milisegundos a AAAA-MM-DD.
+ * Convierte milisegundos del DatePicker a yyyy-MM-dd.
+ *
+ * Se utiliza UTC para evitar que la zona horaria local
+ * convierta, por ejemplo, el día 10 en el día 9.
  */
 private fun convertirFechaATexto(
     fecha: Long
@@ -1920,7 +2007,9 @@ private fun convertirFechaATexto(
     return SimpleDateFormat(
         "yyyy-MM-dd",
         Locale.ROOT
-    ).format(
+    ).apply {
+        timeZone = TimeZone.getTimeZone("UTC")
+    }.format(
         Date(fecha)
     )
 }

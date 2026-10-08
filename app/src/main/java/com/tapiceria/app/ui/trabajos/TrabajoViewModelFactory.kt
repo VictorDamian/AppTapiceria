@@ -3,6 +3,7 @@ package com.tapiceria.app.ui.trabajos
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.tapiceria.app.domain.repository.ClienteRepository
+import com.tapiceria.app.domain.repository.CotizacionRepository
 import com.tapiceria.app.domain.repository.PagoRepository
 import com.tapiceria.app.domain.repository.TrabajoRepository
 
@@ -13,7 +14,8 @@ import com.tapiceria.app.domain.repository.TrabajoRepository
 class TrabajoViewModelFactory(
     private val trabajoRepository: TrabajoRepository,
     private val clienteRepository: ClienteRepository,
-    private val pagoRepository: PagoRepository
+    private val pagoRepository: PagoRepository,
+    private val cotizacionRepository: CotizacionRepository
 ) : ViewModelProvider.Factory {
 
     @Suppress("UNCHECKED_CAST")
@@ -30,14 +32,10 @@ class TrabajoViewModelFactory(
         }
 
         return TrabajoViewModel(
-            trabajoRepository =
-                trabajoRepository,
-
-            clienteRepository =
-                clienteRepository,
-
-            pagoRepository =
-                pagoRepository
+            trabajoRepository = trabajoRepository,
+            clienteRepository = clienteRepository,
+            pagoRepository = pagoRepository,
+            cotizacionRepository = cotizacionRepository
         ) as T
     }
 }

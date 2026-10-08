@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tapiceria.app.data.local.entity.TrabajoEntity
 import com.tapiceria.app.domain.repository.ClienteRepository
+import com.tapiceria.app.domain.repository.CotizacionRepository
 import com.tapiceria.app.domain.repository.PagoRepository
 import com.tapiceria.app.domain.repository.TrabajoRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,11 +14,12 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.math.BigDecimal
-import java.math.RoundingMode
 import java.text.ParsePosition
 import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Date
 import java.util.Locale
+import java.util.TimeZone
 
 /**
  * Gestiona el registro, edición y seguimiento de los trabajos.
@@ -25,7 +27,8 @@ import java.util.Locale
 class TrabajoViewModel(
     private val trabajoRepository: TrabajoRepository,
     private val clienteRepository: ClienteRepository,
-    private val pagoRepository: PagoRepository
+    private val pagoRepository: PagoRepository,
+    private val cotizacionRepository: CotizacionRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(TrabajoUiState())
@@ -251,32 +254,6 @@ class TrabajoViewModel(
     }
 
     /**
-     * Modifica el importe.
-     *
-     * Solamente permite hasta dos decimales.
-     */
-    fun cambiarImporte(valor: String) {
-
-        val normalizado = valor.replace(',', '.')
-
-        if (
-            normalizado.isEmpty() ||
-            normalizado.matches(
-                Regex("^\\d{0,9}(\\.\\d{0,2})?$")
-            )
-        ) {
-
-            _uiState.update {
-                it.copy(
-                    importe = normalizado,
-                    error = null,
-                    mensaje = null
-                )
-            }
-        }
-    }
-
-    /**
      * Modifica la fecha de entrega estimada.
      */
     fun cambiarFechaEntrega(valor: String) {
@@ -494,40 +471,19 @@ class TrabajoViewModel(
             return
         }
 
-        /*
-         * Para un trabajo nuevo, el importe inicial proviene
-         * de la cotización aceptada.
+        /**
+         * El importe del trabajo siempre proviene de la cotización.
          *
-         * Para una edición, utilizamos el importe capturado
-         * en el formulario para permitir modificarlo.
+         * No se permite modificarlo directamente desde Trabajos.
+         * Si cambia el importe, debe modificarse en Cotizaciones.
          */
-        val importeCentavos: Long
-
-        if (estado.trabajoEditandoId == null) {
-
-            // Alta: el importe inicial viene de la cotización.
-            importeCentavos = cotizacion.importeCentavos
-
-        } else {
-
-            // Edición: el usuario puede modificar el importe.
-            importeCentavos =
-                convertirImporteCentavos(
-                    estado.importe
-                ) ?: run {
-
-                    mostrarError(
-                        "Ingresa un importe válido."
-                    )
-
-                    return
-                }
-        }
+        val importeCentavos =
+            cotizacion.importeCentavos
 
         if (importeCentavos <= 0L) {
 
             mostrarError(
-                "El importe debe ser mayor que cero."
+                "La cotización seleccionada tiene un importe inválido."
             )
 
             return
@@ -829,6 +785,72 @@ class TrabajoViewModel(
                 }
 
                 /**
+                 * Una cotización rechazada o cancelada no permite
+                 * continuar hasta terminado ni registrar la entrega.
+                 *
+                 * La validación se realiza nuevamente contra la BD para
+                 * evitar trabajar con un estado antiguo de la pantalla.
+                 */
+                if (
+                    nuevoEstado == "TERMINADO" ||
+                    nuevoEstado == "ENTREGADO"
+                ) {
+
+                    val cotizacionId =
+                        trabajo.cotizacionId
+
+                    if (cotizacionId == null) {
+
+                        mostrarError(
+                            "El trabajo no tiene una cotización asociada."
+                        )
+
+                        return@launch
+                    }
+
+                    val cotizacion =
+                        cotizacionRepository.obtenerPorId(
+                            cotizacionId
+                        )
+
+                    if (cotizacion == null) {
+
+                        mostrarError(
+                            "La cotización asociada ya no existe."
+                        )
+
+                        return@launch
+                    }
+
+                    if (
+                        cotizacion.estado == "RECHAZADA" ||
+                        cotizacion.estado == "CANCELADA"
+                    ) {
+
+                        mostrarError(
+                            "La cotización está ${cotizacion.estado.lowercase()} " +
+                                    "y el trabajo no puede marcarse como terminado " +
+                                    "ni entregado."
+                        )
+
+                        return@launch
+                    }
+
+                    /*
+                     * Para terminar o entregar el trabajo, la cotización
+                     * debe encontrarse aceptada.
+                     */
+                    if (cotizacion.estado != "ACEPTADA") {
+
+                        mostrarError(
+                            "La cotización debe estar aceptada para continuar."
+                        )
+
+                        return@launch
+                    }
+                }
+
+                /**
                  * Si se cancela, únicamente cambia el estado.
                  *
                  * Los pagos permanecen intactos.
@@ -905,37 +927,6 @@ class TrabajoViewModel(
                 textoBusquedaCliente = "",
                 textoBusquedaCotizacion = ""
             )
-        }
-    }
-
-    /**
-     * Convierte un importe decimal a centavos.
-     */
-    private fun convertirImporteCentavos(
-        valor: String
-    ): Long? {
-
-        return try {
-
-            val decimal =
-                valor.toBigDecimalOrNull()
-                    ?: return null
-
-            if (decimal <= BigDecimal.ZERO) {
-                return null
-            }
-
-            decimal
-                .setScale(
-                    2,
-                    RoundingMode.UNNECESSARY
-                )
-                .movePointRight(2)
-                .longValueExact()
-
-        } catch (_: ArithmeticException) {
-
-            null
         }
     }
 
@@ -1072,5 +1063,57 @@ class TrabajoViewModel(
                 mensaje = null
             )
         }
+    }
+
+    /**
+     * Convierte AAAA-MM-DD a milisegundos.
+     *
+     * Se utiliza UTC para mantener la misma fecha que
+     * selecciona Material3 DatePicker.
+     */
+    private fun convertirTextoAFecha(
+        valor: String
+    ): Long? {
+
+        if (valor.isBlank()) {
+            return null
+        }
+
+        return try {
+
+            SimpleDateFormat(
+                "yyyy-MM-dd",
+                Locale.ROOT
+            ).apply {
+                isLenient = false
+                timeZone =
+                    TimeZone.getTimeZone("UTC")
+            }.parse(valor)?.time
+
+        } catch (_: Exception) {
+
+            null
+        }
+    }
+
+    /**
+     * Convierte milisegundos del DatePicker a AAAA-MM-DD.
+     *
+     * UTC evita el desfase de un día provocado por
+     * la zona horaria local.
+     */
+    private fun convertirFechaATexto(
+        fecha: Long
+    ): String {
+
+        return SimpleDateFormat(
+            "yyyy-MM-dd",
+            Locale.ROOT
+        ).apply {
+            timeZone =
+                TimeZone.getTimeZone("UTC")
+        }.format(
+            Date(fecha)
+        )
     }
 }

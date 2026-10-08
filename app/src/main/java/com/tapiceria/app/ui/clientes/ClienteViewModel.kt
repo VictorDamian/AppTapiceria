@@ -197,12 +197,20 @@ class ClienteViewModel(
      *
      * La información histórica del cliente permanece intacta.
      */
+    /**
+     * Desactiva lógicamente al cliente.
+     *
+     * Antes de hacerlo se valida que no tenga cotizaciones
+     * en estados que todavía representen una operación activa.
+     */
     fun desactivarCliente(id: Long) {
+
         if (_uiState.value.guardando) {
             return
         }
 
         viewModelScope.launch {
+
             _uiState.update {
                 it.copy(
                     guardando = true,
@@ -212,24 +220,73 @@ class ClienteViewModel(
             }
 
             try {
-                // El repositorio actualmente devuelve Unit.
+
+                /*
+                 * Primero verificamos que el cliente exista.
+                 */
+                val cliente = repository.obtenerPorId(id)
+
+                if (cliente == null) {
+
+                    _uiState.update {
+                        it.copy(
+                            guardando = false,
+                            error = "El cliente ya no existe."
+                        )
+                    }
+
+                    return@launch
+                }
+
+                /*
+                 * Una cotización PENDIENTE, ACEPTADA o VENCIDA
+                 * todavía bloquea la baja.
+                 *
+                 * RECHAZADA y CANCELADA no bloquean.
+                 */
+                val tieneCotizacionesBloqueantes =
+                    repository.tieneCotizacionesBloqueantes(id)
+
+                if (tieneCotizacionesBloqueantes) {
+
+                    _uiState.update {
+                        it.copy(
+                            guardando = false,
+                            error =
+                                "No se puede desactivar al cliente porque " +
+                                        "tiene cotizaciones que todavía no están " +
+                                        "rechazadas o canceladas."
+                        )
+                    }
+
+                    return@launch
+                }
+
+                /*
+                 * Si no existen cotizaciones bloqueantes,
+                 * realizamos la baja lógica.
+                 */
                 repository.desactivar(id)
 
                 _uiState.update {
                     it.copy(
                         guardando = false,
-                        mensaje = "Cliente desactivado correctamente."
+                        mensaje =
+                            "Cliente desactivado correctamente."
                     )
                 }
 
             } catch (ex: CancellationException) {
+
                 throw ex
 
             } catch (ex: Exception) {
+
                 _uiState.update {
                     it.copy(
                         guardando = false,
-                        error = "No fue posible desactivar el cliente."
+                        error =
+                            "No fue posible desactivar el cliente."
                     )
                 }
             }
