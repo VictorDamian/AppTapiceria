@@ -36,6 +36,16 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalFocusManager
+
 /**
  * Pantalla para registrar, editar y consultar atenciones.
  */
@@ -166,6 +176,7 @@ fun AtencionScreen(
 /**
  * Formulario para crear o editar una atención.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun FormularioAtencion(
     clientes: List<ClienteEntity>,
@@ -185,6 +196,14 @@ private fun FormularioAtencion(
     onGuardar: () -> Unit,
     onCancelarEdicion: () -> Unit
 ) {
+
+    // Controla si el menú de clientes está desplegado.
+    var clientesMenuExpandido by remember {
+        mutableStateOf(false)
+    }
+
+    // Permite cerrar el teclado después de seleccionar un cliente.
+    val focusManager = LocalFocusManager.current
 
     val clientesFiltrados = clientes
         .filter { cliente ->
@@ -263,23 +282,98 @@ private fun FormularioAtencion(
                 )
             }
 
-            /**
-             * Campo de búsqueda.
-             */
-            OutlinedTextField(
-                value = textoBusquedaCliente,
-                onValueChange =
-                    onBusquedaClienteChange,
-                modifier = Modifier.fillMaxWidth(),
-                label = {
-                    Text("Buscar cliente")
-                },
-                placeholder = {
-                    Text("Nombre o teléfono")
-                },
-                singleLine = true,
-                enabled = !guardando
-            )
+
+            // Buscador desplegable de clientes, similar al de Cotizaciones.
+            ExposedDropdownMenuBox(
+                expanded = clientesMenuExpandido,
+                onExpandedChange = {
+                    if (!guardando) {
+                        clientesMenuExpandido = !clientesMenuExpandido
+                    }
+                }
+            ) {
+                OutlinedTextField(
+                    value = textoBusquedaCliente,
+                    onValueChange = { texto ->
+                        // Actualiza el filtro y abre el menú mientras se escribe.
+                        onBusquedaClienteChange(texto)
+                        clientesMenuExpandido = true
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor(),
+                    label = {
+                        Text("Buscar cliente")
+                    },
+                    placeholder = {
+                        Text("Nombre o teléfono")
+                    },
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(
+                            expanded = clientesMenuExpandido
+                        )
+                    },
+                    singleLine = true,
+                    enabled = !guardando
+                )
+
+                ExposedDropdownMenu(
+                    expanded = clientesMenuExpandido,
+                    onDismissRequest = {
+                        clientesMenuExpandido = false
+                    }
+                ) {
+                    if (clientesFiltrados.isEmpty()) {
+                        DropdownMenuItem(
+                            text = {
+                                Text("No se encontraron clientes.")
+                            },
+                            onClick = {
+                                clientesMenuExpandido = false
+                            }
+                        )
+                    } else {
+                        clientesFiltrados.forEach { cliente ->
+                            DropdownMenuItem(
+                                text = {
+                                    Column {
+                                        Text(
+                                            text = cliente.nombre,
+                                            fontWeight = FontWeight.Medium
+                                        )
+
+                                        if (cliente.telefono.isNotBlank()) {
+                                            Text(
+                                                text = cliente.telefono,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+
+                                        if (!cliente.activo) {
+                                            Text(
+                                                text = "Cliente inactivo",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.error
+                                            )
+                                        }
+                                    }
+                                },
+                                enabled = !guardando && cliente.activo,
+                                onClick = {
+                                    // Conserva la selección mediante el ViewModel.
+                                    onSeleccionarCliente(cliente.id)
+
+                                    // Limpia el filtro y cierra el menú.
+                                    onBusquedaClienteChange("")
+                                    clientesMenuExpandido = false
+                                    focusManager.clearFocus()
+                                }
+                            )
+                        }
+                    }
+                }
+            }
 
             /**
              * Opción para dejar la atención sin cliente.
@@ -292,53 +386,7 @@ private fun FormularioAtencion(
                 Text("Pendiente / No aplica")
             }
 
-            /**
-             * Resultados de búsqueda.
-             */
-            clientesFiltrados.forEach { cliente ->
 
-                OutlinedButton(
-                    onClick = {
-                        onSeleccionarCliente(cliente.id)
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !guardando && cliente.activo
-                ) {
-
-                    Column(
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-
-                        Text(
-                            text = cliente.nombre,
-                            fontWeight = FontWeight.Medium
-                        )
-
-                        if (cliente.telefono.isNotBlank()) {
-
-                            Text(
-                                text = cliente.telefono,
-                                style =
-                                    MaterialTheme.typography.bodySmall,
-                                color =
-                                    MaterialTheme.colorScheme
-                                        .onSurfaceVariant
-                            )
-                        }
-
-                        if (!cliente.activo) {
-
-                            Text(
-                                text = "Cliente inactivo",
-                                style =
-                                    MaterialTheme.typography.bodySmall,
-                                color =
-                                    MaterialTheme.colorScheme.error
-                            )
-                        }
-                    }
-                }
-            }
 
             Text(
                 text = "Tipo de atención",
