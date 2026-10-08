@@ -64,6 +64,10 @@ fun PagoScreen(viewModel: PagoViewModel) {
     val trabajoCancelado =
         trabajoSeleccionado?.estado == "CANCELADO"
 
+    // Un trabajo terminado conserva sus pagos, pero no permite eliminarlos.
+    val trabajoTerminado =
+        trabajoSeleccionado?.estado == "TERMINADO"
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -278,6 +282,15 @@ fun PagoScreen(viewModel: PagoViewModel) {
 
         Spacer(modifier = Modifier.height(4.dp))
 
+        if (trabajoTerminado) {
+            Text(
+                text = "Este trabajo está terminado. " +
+                        "Sus pagos se conservan y no pueden eliminarse.",
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
+
         Text(
             text = "Historial de pagos",
             style = MaterialTheme.typography.titleLarge,
@@ -297,7 +310,12 @@ fun PagoScreen(viewModel: PagoViewModel) {
             estado.pagos.forEach { pago ->
                 PagoItem(
                     pago = pago,
-                    onEliminar = { pagoPorEliminar = pago }
+                    puedeEliminar = !trabajoTerminado,
+                    onEliminar = {
+                        if (!trabajoTerminado) {
+                            pagoPorEliminar = pago
+                        }
+                    }
                 )
             }
         }
@@ -383,6 +401,7 @@ private fun FilaImporte(
 @Composable
 private fun PagoItem(
     pago: PagoEntity,
+    puedeEliminar: Boolean,
     onEliminar: () -> Unit
 ) {
     val formatoFecha = remember {
@@ -427,8 +446,17 @@ private fun PagoItem(
                 }
             }
 
-            TextButton(onClick = onEliminar) {
-                Text("Eliminar")
+            TextButton(
+                onClick = onEliminar,
+                enabled = puedeEliminar
+            ) {
+                Text(
+                    text = if (puedeEliminar) {
+                        "Eliminar"
+                    } else {
+                        "No disponible"
+                    }
+                )
             }
         }
     }

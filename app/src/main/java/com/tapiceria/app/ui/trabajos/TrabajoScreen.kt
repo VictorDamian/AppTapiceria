@@ -1667,33 +1667,20 @@ private fun TrabajoItem(
                 }
             }
 
-            // --------------------------------------------------------
-            // BOTÓN EDITAR
-            // --------------------------------------------------------
+            // Permite editar el trabajo sin importar su estado actual.
+            OutlinedButton(
+                onClick = onEditar,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(10.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = null
+                )
 
-            if (trabajo.estado != "ENTREGADO") {
+                Spacer(modifier = Modifier.width(8.dp))
 
-                OutlinedButton(
-                    onClick = onEditar,
-                    modifier =
-                        Modifier.fillMaxWidth(),
-                    shape =
-                        RoundedCornerShape(10.dp)
-                ) {
-
-                    Icon(
-                        imageVector =
-                            Icons.Default.Edit,
-                        contentDescription = null
-                    )
-
-                    Spacer(
-                        modifier =
-                            Modifier.width(8.dp)
-                    )
-
-                    Text("Editar trabajo")
-                }
+                Text("Editar trabajo")
             }
 
             // --------------------------------------------------------
@@ -1919,16 +1906,43 @@ private fun TrabajoItem(
                 "ENTREGADO" -> {
 
                     Text(
-                        text =
-                            "Trabajo entregado. " +
-                                    "El estado es definitivo.",
-                        style =
-                            MaterialTheme.typography
-                                .bodySmall,
-                        color =
-                            MaterialTheme.colorScheme
-                                .primary
+                        text = "Trabajo entregado. Puedes modificar su estado.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
                     )
+
+                    OutlinedButton(
+                        onClick = {
+                            onCambiarEstado("TERMINADO")
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text("Volver a terminado")
+                    }
+
+                    OutlinedButton(
+                        onClick = {
+                            onCambiarEstado("EN_PROCESO")
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text("Volver a en proceso")
+                    }
+
+                    OutlinedButton(
+                        onClick = {
+                            onCambiarEstado("CANCELADO")
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        )
+                    ) {
+                        Text("Cancelar trabajo")
+                    }
                 }
             }
         }

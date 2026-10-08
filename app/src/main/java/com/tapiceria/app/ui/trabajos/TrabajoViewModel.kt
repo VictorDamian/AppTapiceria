@@ -192,47 +192,50 @@ class TrabajoViewModel(
     }
 
     /**
-     * Selecciona una cotización para el trabajo.
+     * Selecciona una cotización y actualiza el importe informativo
+     * que se muestra en el formulario.
+     *
+     * El importe siempre proviene de la cotización y no se edita
+     * directamente desde el módulo Trabajos.
      */
-    fun seleccionarCotizacion(
-        id: Long?
-    ) {
+    fun seleccionarCotizacion(id: Long?) {
 
         if (id == null) {
-
             _uiState.update {
                 it.copy(
                     cotizacionSeleccionadaId = null,
+                    importe = "",
                     error = null,
                     mensaje = null
                 )
             }
-
             return
         }
 
-        val clienteId =
-            _uiState.value.clienteSeleccionadoId
+        val estado = _uiState.value
+        val clienteId = estado.clienteSeleccionadoId
 
-        val cotizacion =
-            _uiState.value.cotizaciones
-                .firstOrNull {
-                    it.id == id &&
-                            it.clienteId == clienteId
-                }
+        val cotizacion = estado.cotizaciones.firstOrNull {
+            it.id == id && it.clienteId == clienteId
+        }
 
         if (cotizacion == null) {
-
             mostrarError(
                 "La cotización no corresponde al cliente seleccionado."
             )
-
             return
         }
+
+        // Mostramos el importe de la cotización con dos decimales.
+        val importeTexto = BigDecimal.valueOf(
+            cotizacion.importeCentavos,
+            2
+        ).setScale(2).toPlainString()
 
         _uiState.update {
             it.copy(
                 cotizacionSeleccionadaId = id,
+                importe = importeTexto,
                 error = null,
                 mensaje = null
             )
@@ -296,14 +299,6 @@ class TrabajoViewModel(
                 if (trabajo == null) {
                     mostrarError(
                         "No se encontró el trabajo."
-                    )
-                    return@launch
-                }
-
-                // Un trabajo entregado ya no se puede editar.
-                if (trabajo.estado == "ENTREGADO") {
-                    mostrarError(
-                        "Un trabajo entregado ya no puede editarse."
                     )
                     return@launch
                 }
@@ -630,19 +625,6 @@ class TrabajoViewModel(
                     return@launch
                 }
 
-                if (existente.estado == "ENTREGADO") {
-
-                    _uiState.update {
-                        it.copy(
-                            guardando = false,
-                            error =
-                                "Un trabajo entregado no puede modificarse."
-                        )
-                    }
-
-                    return@launch
-                }
-
                 // ----------------------------------------------------
                 // VALIDACIÓN DE PAGOS
                 // ----------------------------------------------------
@@ -757,18 +739,6 @@ class TrabajoViewModel(
                 }
 
                 /**
-                 * ENTREGADO es el único estado completamente final.
-                 */
-                if (trabajo.estado == "ENTREGADO") {
-
-                    mostrarError(
-                        "Un trabajo entregado ya no puede cambiar de estado."
-                    )
-
-                    return@launch
-                }
-
-                /**
                  * No permitimos marcar como entregado
                  * desde ningún estado diferente de TERMINADO.
                  */
@@ -850,30 +820,25 @@ class TrabajoViewModel(
                     }
                 }
 
-                /**
-                 * Si se cancela, únicamente cambia el estado.
-                 *
-                 * Los pagos permanecen intactos.
+                /*
+                 * La fecha real se establece al entregar el trabajo.
+                 * Si posteriormente se revierte a otro estado operativo,
+                 * se limpia para no mostrar una entrega vigente.
+                 * Al cancelar, se conserva el dato histórico.
                  */
-                val fechaEntregaReal =
-                    if (nuevoEstado == "ENTREGADO") {
-
+                val fechaEntregaReal = when {
+                    nuevoEstado == "ENTREGADO" ->
                         System.currentTimeMillis()
 
-                    } else if (
-                        nuevoEstado == "CANCELADO"
-                    ) {
-
-                        // Al cancelar no se elimina historial.
+                    nuevoEstado == "CANCELADO" ->
                         trabajo.fechaEntregaReal
 
-                    } else {
+                    trabajo.estado == "ENTREGADO" ->
+                        null
 
-                        // Si se recupera de CANCELADO,
-                        // conservamos la fecha existente solamente
-                        // si realmente fue una entrega anterior.
+                    else ->
                         trabajo.fechaEntregaReal
-                    }
+                }
 
                 val actualizado =
                     trabajo.copy(

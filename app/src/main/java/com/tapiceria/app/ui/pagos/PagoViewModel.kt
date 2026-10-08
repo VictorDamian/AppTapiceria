@@ -210,12 +210,40 @@ class PagoViewModel(
     }
 
     /**
-     * Elimina un pago y permite que Room actualice el saldo automáticamente.
+     * Elimina un pago únicamente si el trabajo asociado
+     * no se encuentra en estado TERMINADO.
+     *
+     * Se consulta nuevamente la base de datos para evitar
+     * eliminar un pago si el estado cambió desde la pantalla.
      */
     fun eliminarPago(pagoId: Long) {
+
         viewModelScope.launch {
             try {
-                val resultado = pagoRepository.eliminarPorId(pagoId)
+
+                val trabajoId =
+                    _uiState.value.trabajoSeleccionadoId
+                        ?: run {
+                            mostrarError("Selecciona un trabajo.")
+                            return@launch
+                        }
+
+                // Consultamos el estado más reciente del trabajo.
+                val trabajo = trabajoRepository.obtenerPorId(trabajoId)
+                    ?: run {
+                        mostrarError("El trabajo ya no existe.")
+                        return@launch
+                    }
+
+                if (trabajo.estado == "TERMINADO" || trabajo.estado == "ENTREGADO") {
+                    mostrarError(
+                        "No se pueden eliminar pagos de un trabajo terminado."
+                    )
+                    return@launch
+                }
+
+                val resultado =
+                    pagoRepository.eliminarPorId(pagoId)
 
                 _uiState.update {
                     it.copy(
@@ -227,8 +255,11 @@ class PagoViewModel(
                         error = null
                     )
                 }
+
             } catch (ex: Exception) {
-                mostrarError(ex.message ?: "No fue posible eliminar el pago.")
+                mostrarError(
+                    ex.message ?: "No fue posible eliminar el pago."
+                )
             }
         }
     }
