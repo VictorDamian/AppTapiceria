@@ -67,6 +67,8 @@ import com.tapiceria.app.ui.theme.TapiceriaDamianTheme
 import com.tapiceria.app.ui.trabajos.TrabajoScreen
 import com.tapiceria.app.ui.trabajos.TrabajoViewModel
 import com.tapiceria.app.ui.trabajos.TrabajoViewModelFactory
+// Permite interceptar el botón Atrás del sistema.
+import androidx.activity.compose.BackHandler
 
 /**
  * Modelo para definir los elementos de la barra de navegación inferior.
@@ -154,6 +156,34 @@ class MainActivity : ComponentActivity() {
                 )
 
                 var pantallaActual by remember { mutableStateOf("INICIO") }
+
+                // Guarda las pantallas visitadas para poder regresar a la anterior.
+                val historialNavegacion = remember {
+                    mutableStateListOf<String>()
+                }
+
+                // Cambia de pantalla y conserva la anterior en el historial.
+                fun navegarA(nuevaPantalla: String) {
+                    if (nuevaPantalla != pantallaActual) {
+                        historialNavegacion.add(pantallaActual)
+                        pantallaActual = nuevaPantalla
+                    }
+                }
+
+                // Regresa a la pantalla anterior o al inicio si no hay historial.
+                BackHandler(enabled = true) {
+                    if (historialNavegacion.isNotEmpty()) {
+                        pantallaActual = historialNavegacion.removeAt(
+                            historialNavegacion.lastIndex
+                        )
+                    } else if (pantallaActual != "INICIO") {
+                        pantallaActual = "INICIO"
+                    } else {
+                        // En Inicio, el comportamiento predeterminado permite salir.
+                        finish()
+                    }
+                }
+
                 var clienteIdHistorial by remember { mutableStateOf<Long?>(null) }
                 var menuDesplegableExpandido by remember { mutableStateOf(false) }
 
@@ -223,9 +253,10 @@ class MainActivity : ComponentActivity() {
                                                 contentDescription = null
                                             )
                                         },
+                                        // Opción Exportar.
                                         onClick = {
                                             menuDesplegableExpandido = false
-                                            pantallaActual = "EXPORTAR"
+                                            navegarA("EXPORTAR")
                                         }
                                     )
                                     DropdownMenuItem(
@@ -236,9 +267,10 @@ class MainActivity : ComponentActivity() {
                                                 contentDescription = null
                                             )
                                         },
+                                        // Opción Respaldo.
                                         onClick = {
                                             menuDesplegableExpandido = false
-                                            pantallaActual = "RESPALDO"
+                                            navegarA("RESPALDO")
                                         }
                                     )
                                 }
@@ -258,7 +290,10 @@ class MainActivity : ComponentActivity() {
                                 val estaSeleccionado = pantallaActual == item.ruta
                                 NavigationBarItem(
                                     selected = estaSeleccionado,
-                                    onClick = { pantallaActual = item.ruta },
+                                    // Barra inferior.
+                                    onClick = {
+                                        navegarA(item.ruta)
+                                    },
                                     icon = {
                                         Icon(
                                             imageVector = item.icono,
@@ -288,12 +323,20 @@ class MainActivity : ComponentActivity() {
                                 viewModel = clienteViewModel,
                                 onVerHistorial = { clienteId ->
                                     clienteIdHistorial = clienteId
-                                    pantallaActual = "HISTORIAL"
+                                    navegarA("HISTORIAL")
                                 }
                             )
                             "HISTORIAL" -> HistorialClienteScreen(
                                 viewModel = historialClienteViewModel,
-                                onVolver = { pantallaActual = "CLIENTES" }
+                                onVolver = {
+                                    if (historialNavegacion.isNotEmpty()) {
+                                        pantallaActual = historialNavegacion.removeAt(
+                                            historialNavegacion.lastIndex
+                                        )
+                                    } else {
+                                        pantallaActual = "CLIENTES"
+                                    }
+                                }
                             )
                             "ATENCIONES" -> AtencionScreen(atencionViewModel)
                             "COTIZACIONES" -> CotizacionScreen(cotizacionViewModel)
