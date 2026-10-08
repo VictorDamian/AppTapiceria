@@ -85,10 +85,6 @@ fun PagoScreen(viewModel: PagoViewModel) {
             color = MaterialTheme.colorScheme.onBackground
         )
 
-        // Selector del trabajo al que se aplicará el pago.
-        Text("Trabajo",
-            color = MaterialTheme.colorScheme.onBackground)
-
         Column {
             OutlinedButton(
                 onClick = { selectorTrabajosAbierto = true },

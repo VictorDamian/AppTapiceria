@@ -115,24 +115,20 @@ fun ClienteScreen(
                 )
             }
         }
-    ) { paddingValues ->
+    ) {
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
                 .padding(16.dp)
         ) {
 
             Text(
-                text = "Clientes",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
+                text = "Registra y edita clientes.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            Spacer(
-                modifier = Modifier.height(12.dp)
-            )
 
             OutlinedTextField(
                 value = estado.textoBusqueda,

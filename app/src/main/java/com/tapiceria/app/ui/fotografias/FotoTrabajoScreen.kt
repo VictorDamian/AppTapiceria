@@ -110,12 +110,12 @@ fun FotoTrabajoScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // Conserva los selectores, botones y listado actuales.
-        Text(
-            text = "Fotografías",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onBackground
 
+        Text(
+            text = "Captura el antes y después de un trabajo.\n" +
+                    "Selecciona un trabajo:",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         estado.error?.let {

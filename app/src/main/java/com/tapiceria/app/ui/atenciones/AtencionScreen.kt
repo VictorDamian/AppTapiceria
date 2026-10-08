@@ -54,15 +54,6 @@ fun AtencionScreen(
     ) {
 
         item {
-
-            Text(
-                text = "Atenciones",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
             Text(
                 text = "Registra consultas y solicitudes de cotización.",
                 style = MaterialTheme.typography.bodyMedium,

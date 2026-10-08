@@ -174,8 +174,8 @@ class MainActivity : ComponentActivity() {
                     ItemNavegacionInferior("ATENCIONES", "Atenciones", Icons.Default.SupportAgent),
                     ItemNavegacionInferior("COTIZACIONES", "Cotizaciones", Icons.Default.Receipt),
                     ItemNavegacionInferior("TRABAJOS", "Trabajos", Icons.Default.Build),
-                    ItemNavegacionInferior("FOTOGRAFIAS", "Fotos", Icons.Default.CameraAlt),
-                    ItemNavegacionInferior("PAGOS", "Pagos", Icons.Default.MonetizationOn)
+                    ItemNavegacionInferior("PAGOS", "Pagos", Icons.Default.MonetizationOn),
+                    ItemNavegacionInferior("FOTOGRAFIAS", "Fotos", Icons.Default.CameraAlt)
                 )
 
                 Scaffold(
@@ -193,8 +193,8 @@ class MainActivity : ComponentActivity() {
                                         "ATENCIONES" -> "Atenciones"
                                         "COTIZACIONES" -> "Cotizaciones"
                                         "TRABAJOS" -> "Trabajos"
-                                        "FOTOGRAFIAS" -> "Fotografías"
                                         "PAGOS" -> "Pagos"
+                                        "FOTOGRAFIAS" -> "Fotografías"
                                         "EXPORTAR" -> "Exportar Datos"
                                         "RESPALDO" -> "Copia de Respaldo"
                                         else -> "Tapicería"

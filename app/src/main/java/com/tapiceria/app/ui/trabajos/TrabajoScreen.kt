@@ -168,13 +168,6 @@ fun TrabajoScreen(
             )
 
             Column {
-
-                Text(
-                    text = "Trabajos",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold
-                )
-
                 Text(
                     text = "Registra y da seguimiento a tus trabajos",
                     style = MaterialTheme.typography.bodyMedium,

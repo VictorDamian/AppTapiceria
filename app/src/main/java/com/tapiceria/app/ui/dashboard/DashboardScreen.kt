@@ -68,7 +68,7 @@ fun DashboardScreen(viewModel: DashboardViewModel) {
             )
 
             Text(
-                text = "Resumen de la actividad de tu tapicería.",
+                text = "Resumen de la actividad",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

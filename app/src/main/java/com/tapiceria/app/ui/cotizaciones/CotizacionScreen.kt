@@ -69,12 +69,10 @@ fun CotizacionScreen(
     ) {
 
         item {
-
             Text(
-                text = "Cotizaciones",
-                style =
-                    MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
+                text = "Da de alta una cotización",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
