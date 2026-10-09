@@ -69,6 +69,7 @@ import com.tapiceria.app.ui.trabajos.TrabajoViewModel
 import com.tapiceria.app.ui.trabajos.TrabajoViewModelFactory
 // Permite interceptar el botón Atrás del sistema.
 import androidx.activity.compose.BackHandler
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 
 /**
  * Modelo para definir los elementos de la barra de navegación inferior.
@@ -85,10 +86,15 @@ class MainActivity : ComponentActivity() {
 
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
+
+        // Instala el splash antes de inicializar la actividad.
+        installSplashScreen()
+
         super.onCreate(savedInstanceState)
 
         enableEdgeToEdge()
 
+        // Continúa aquí el código actual, sin eliminarlo.
         container = (application as TapiceriaApplication).container
 
         setContent {

@@ -1,5 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.TapiceriaDamian" parent="android:Theme.Material.Light.NoActionBar" />
+    <!-- Tema que Android muestra mientras inicia la aplicación. -->
+    <style name="Theme.TapiceriaDamian" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">#12345A</item>
+
+        <!-- Por ahora utiliza el icono actual; después lo cambiaremos. -->
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+
+        <!-- Tema normal que se aplica al terminar el splash. -->
+        <item name="postSplashScreenTheme">@style/Theme.TapiceriaDamian.App</item>
+    </style>
+
+    <!-- Tema habitual de la aplicación Compose. -->
+    <style name="Theme.TapiceriaDamian.App"
+        parent="android:Theme.Material.Light.NoActionBar" />
+
 </resources>

@@ -88,6 +88,9 @@ dependencies {
 
     // Iconos de Material para Jetpack Compose.
     implementation("androidx.compose.material:material-icons-extended")
+
+    // Permite configurar el splash screen nativo de Android.
+    implementation("androidx.core:core-splashscreen:1.0.1")
 }
 
     // Configura la ubicación de los esquemas de Room para futuras migraciones.
